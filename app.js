@@ -57,6 +57,18 @@ function initApp() {
     tContainer.className = 'toast-container';
     document.body.appendChild(tContainer);
 
+    // Handle redirect result first (for signInWithRedirect flow)
+    auth.getRedirectResult().then((result) => {
+        if (result && result.user) {
+            console.log("Redirect login successful:", result.user.email);
+        }
+    }).catch((error) => {
+        if (error.code !== 'auth/no-auth-event') {
+            console.error("Redirect error:", error.message);
+            showToast("Login error: " + error.message, "error");
+        }
+    });
+
     // Auth State Observer
     auth.onAuthStateChanged(async (user) => {
         console.log("Auth State Changed:", user ? "LoggedIn" : "LoggedOut");
@@ -214,7 +226,13 @@ function renderLogin() {
             </div>
         `;
 
-    document.getElementById('google-signin').onclick = () => auth.signInWithPopup(provider).catch(e => showToast(e.message, 'error'));
+    document.getElementById('google-signin').onclick = () => {
+        toggleSpinner(true);
+        auth.signInWithRedirect(provider).catch(e => {
+            toggleSpinner(false);
+            showToast(e.message, 'error');
+        });
+    };
     document.getElementById('go-to-register').onclick = (e) => { e.preventDefault(); showView('register'); };
     toggleSpinner(false);
 }
@@ -246,7 +264,13 @@ function renderRegister() {
             </div>
         `;
 
-    document.getElementById('google-signup').onclick = () => auth.signInWithPopup(provider).catch(e => showToast(e.message, 'error'));
+    document.getElementById('google-signup').onclick = () => {
+        toggleSpinner(true);
+        auth.signInWithRedirect(provider).catch(e => {
+            toggleSpinner(false);
+            showToast(e.message, 'error');
+        });
+    };
     document.getElementById('go-to-login').onclick = (e) => { e.preventDefault(); showView('login'); };
     toggleSpinner(false);
 }
