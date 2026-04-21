@@ -62,17 +62,14 @@ function initApp() {
         console.log("Auth State Changed:", user ? "LoggedIn" : "LoggedOut");
         if (user) {
             currentUser = user;
-            // Pre-fetch notes for global availability (Profile stats, etc)
-            await fetchAllNotes();
-
+            // Navigate FIRST so login feels instant and responsive
             const currentHash = window.location.hash.replace('#', '') || 'dashboard';
-            if (currentView === 'login' || currentView === 'register') {
-                navigate(currentHash);
-            } else {
-                navigate(currentHash);
-            }
+            navigate(currentHash);
+            // Then fetch notes in the background (non-blocking)
+            fetchAllNotes().catch(e => console.warn("Background note sync:", e.message));
         } else {
             currentUser = null;
+            notes = [];
             navigate('login');
         }
     });
@@ -119,12 +116,22 @@ async function fetchAllNotes() {
         });
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.details || errData.error || `Status ${response.status}`);
+            const errMsg = errData.details || errData.error || `Status ${response.status}`;
+            // Only show a soft warning, not a scary red error - database may be warming up
+            if (errMsg.includes('does not exist')) {
+                console.warn("DB warming up - tables not ready yet:", errMsg);
+                showToast("Database warming up, please wait a moment...", "info");
+            } else {
+                showToast(`Sync issue: ${errMsg}`, "error");
+            }
+            notes = [];
+            return;
         }
         notes = await response.json();
     } catch (e) {
         console.error("Global Fetch Error:", e);
-        showToast(`Server Response: ${e.message}`, "error");
+        // Don't show error to user here - will show on dashboard if needed
+        notes = [];
     }
 }
 
