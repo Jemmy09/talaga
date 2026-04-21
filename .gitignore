@@ -18,6 +18,10 @@ build/
 .expo/
 .npm/
 
+# Firebase Secrets
+serviceAccountKey.json
+ca.pem
+
 # Antigravity artifacts (ignore if you don't want AI logs in your repo)
 .gemini/
 brain/

@@ -15,6 +15,6 @@ git commit -m "$msg"
 
 # 4. Push to master (local) and main (Render production)
 Write-Host "📤 Pushing to GitHub..." -ForegroundColor Yellow
-git push origin master:main --force
+git push origin master:main
 
 Write-Host "✅ Sync Complete! Your changes are now live on GitHub and Render." -ForegroundColor Green
