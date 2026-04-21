@@ -57,18 +57,6 @@ function initApp() {
     tContainer.className = 'toast-container';
     document.body.appendChild(tContainer);
 
-    // Handle redirect result first (for signInWithRedirect flow)
-    auth.getRedirectResult().then((result) => {
-        if (result && result.user) {
-            console.log("Redirect login successful:", result.user.email);
-        }
-    }).catch((error) => {
-        if (error.code !== 'auth/no-auth-event') {
-            console.error("Redirect error:", error.message);
-            showToast("Login error: " + error.message, "error");
-        }
-    });
-
     // Auth State Observer
     auth.onAuthStateChanged(async (user) => {
         console.log("Auth State Changed:", user ? "LoggedIn" : "LoggedOut");
@@ -228,7 +216,7 @@ function renderLogin() {
 
     document.getElementById('google-signin').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithRedirect(provider).catch(e => {
+        auth.signInWithPopup(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
@@ -266,7 +254,7 @@ function renderRegister() {
 
     document.getElementById('google-signup').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithRedirect(provider).catch(e => {
+        auth.signInWithPopup(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
