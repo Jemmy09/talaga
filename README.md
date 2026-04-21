@@ -1,51 +1,34 @@
-# Talaga - Premium Personal Space 📝
+# Talaga - Premium Personal Workspace 📝
 
-Talaga is a modern, elegantly designed personal dashboard for organizing notes, to-do lists, and accounts. Built with a focus on efficiency and premium aesthetics, Talaga provides a secure sanctuary for your digital life.
+Talaga is an elite, glassmorphism-inspired personal dashboard for organizing thoughts, tasks, and accounts. 
 
-![Talaga Banner](images/logo.png)
+## 🏗️ Professional Architecture (Free Tier Optimized)
+This project is engineered to provide premium functionality using 100% free-tier services:
+- **Frontend**: [GitHub Pages](https://pages.github.com/) 
+- **Authentication**: [Firebase Auth](https://firebase.google.com/) (Google Login)
+- **Backend API**: [Render](https://render.com/) (Node.js/Express)
+- **Database**: [Aiven](https://aiven.io/) (PostgreSQL)
 
-## ✨ Features
+## 🚀 Deployment Guide
 
-- **Digital Workspace**: A distraction-free dashboard for all your thoughts.
-- **Categorized Notes**: Organize your life with 'Information', 'To-Do', and 'Account' badges.
-- **Optional Descriptions**: Capture quick ideas with just a title, or add detailed notes when needed.
-- **Secure Authentication**: Google-powered sign-in for seamless and safe access.
-- **Responsive Design**: Elegant glassmorphism UI that works perfectly on desktop and mobile.
-- **Sync Everywhere**: Powered by Firebase Firestore for real-time data persistence.
-- **Help Center**: Integrated guide and FAQs to help you master your workspace.
+### 1. Database Setup
+1. Log in to your **Aiven Console**.
+2. Run the code from **[setup.sql](setup.sql)** in your Aiven PostgreSQL query editor to create the required tables.
 
-## 🚀 Getting Started
+### 2. Backend Deployment (Render)
+1. Push this repository to your **GitHub**.
+2. Create a **New Web Service** on Render and link this repository.
+3. In the Render **Environment** settings, add:
+   - `DATABASE_URL`: Your Aiven Service URI.
+   - `FIREBASE_SERVICE_ACCOUNT`: Your Base64 encoded Firebase JSON (See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)**).
+4. Once deployed, Render will provide a **Live URL** (e.g., `https://talaga-api.onrender.com`).
 
-### Prerequisites
-- A modern web browser.
-- A Firebase project (for hosting and database).
+### 3. Final Frontend Configuration
+1. Open **[app.js](app.js)** and update `API_BASE_URL` on **line 30** with your Render Live URL.
+2. Push the change to GitHub.
 
-### Local Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Jemmy09/talaga.git
-   ```
-2. Open `index.html` in your browser or use a local server like `live-server`.
-
-### Configuration
-The app uses Firebase Compat SDK. Update the `firebaseConfig` object in `app.js` with your own credentials if you are deploying a fork:
-
-```javascript
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    // ...
-};
-```
-
-## 🛠️ Built With
-- **Frontend**: HTML5, CSS3 (Vanilla), JavaScript (ES6+)
-- **Backend**: Firebase Auth & Firestore
-- **Icons**: Font Awesome 6
-- **Typography**: Outfit (Google Fonts)
-
-## 👤 Developer
-Created by **Jemmy Francisco**.
+## 👥 Credits
+Developed by **Jemmy Francisco**.
 
 ---
-*Truly your personal space.*
+*Truly your personal space. Elegant, Secure, and Free.*
