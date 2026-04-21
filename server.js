@@ -86,13 +86,13 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
 
 // 2. Create a new note
 app.post('/api/notes', authenticateUser, async (req, res) => {
-  const { title, content, category } = req.body;
+  const { title, description, content, category } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
     const result = await pool.query(
-      'INSERT INTO notes (user_id, title, content, category) VALUES ($1, $2, $3, $4) RETURNING *',
-      [req.user.uid, title, content, category]
+      'INSERT INTO notes (user_id, title, description, content, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [req.user.uid, title, description, content, category]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -104,12 +104,12 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
 // 3. Update an existing note
 app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { title, content, category } = req.body;
+  const { title, description, content, category } = req.body;
   
   try {
     const result = await pool.query(
-      'UPDATE notes SET title = $1, content = $2, category = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
-      [title, content, category, id, req.user.uid]
+      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4 WHERE id = $5 AND user_id = $6 RETURNING *',
+      [title, description, content, category, id, req.user.uid]
     );
     
     if (result.rowCount === 0) {

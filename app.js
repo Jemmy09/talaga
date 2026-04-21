@@ -282,34 +282,41 @@ async function renderDashboard() {
 function renderAbout() {
     mainNav.classList.remove('hidden');
     viewContainer.innerHTML = `
-            <div class="auth-container" style="max-width: 700px; text-align: left; animation: slideUp 0.6s ease">
-                <div style="text-align: center; margin-bottom: 3rem">
-                    <div style="display: inline-block; padding: 1rem; background: var(--glass-bg); border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom: 1.5rem">
-                        <img src="images/logo.png" style="width: 80px;">
+            <div class="auth-container" style="max-width: 750px; text-align: left; animation: slideUp 0.6s ease">
+                <div style="text-align: center; margin-bottom: 3.5rem">
+                    <div style="display: inline-block; padding: 1.2rem; background: var(--glass-bg); border-radius: 24px; border: 1px solid var(--glass-border); margin-bottom: 1.5rem; box-shadow: var(--glow)">
+                        <img src="images/logo.png" style="width: 90px;">
                     </div>
-                    <h1 style="font-size: 2.5rem">About Talaga</h1>
-                    <p style="color: var(--text-primary); font-weight: 500; font-size: 1.1rem; margin-top: 0.5rem">"Truly your personal space."</p>
+                    <h1 style="font-size: 2.8rem; letter-spacing: -1px">Truly Your Space.</h1>
+                    <p style="color: var(--text-primary); font-weight: 500; font-size: 1.2rem; margin-top: 0.5rem">Talaga: Because your thoughts deserve a sanctuary. 🧘‍♂️</p>
                 </div>
                 
-                <section style="margin-bottom: 3rem; line-height: 1.8">
-                    <h3 style="color: var(--primary); margin-bottom: 1rem; font-size: 1.2rem">The Vision</h3>
-                    <p style="color: var(--text-muted)">Talaga was conceived as a sanctuary for focused thinking. In a world of digital noise, Talaga provides a clean, secure, and professional environment to capture what matters most.</p>
+                <section style="margin-bottom: 3.5rem; line-height: 1.9">
+                    <h3 style="color: var(--primary); margin-bottom: 1.2rem; font-size: 1.3rem">The Story Behind the Screen 💻</h3>
+                    <p style="color: var(--text-muted)">Talaga wasn't built by a robot in a cold factory. It was crafted with love (and probably way too much coffee ☕) to solve a simple problem: digital chaos. We believe that when your digital space is clean, your mind follows. Whether you're a student pulling an all-nighter or a business pro closing deals, Talaga is here to hold your hand (metaphorically, of course). 😉</p>
                 </section>
 
-                <div style="background: var(--glass-bg); padding: 2rem; border-radius: 24px; border: 1px solid var(--glass-border); display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 30px; border: 1px solid var(--glass-border); display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; backdrop-filter: blur(20px)">
                     <div>
-                    <h4 style="margin-bottom: 1rem; color: var(--text-main)"><i class="fas fa-user-tie" style="margin-right: 0.75rem; color: var(--primary)"></i> Developer</h4>
-                    <p style="color: var(--text-muted)">Jemmy Francisco</p>
+                        <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem"><i class="fas fa-user-ninja" style="margin-right: 0.75rem; color: var(--primary)"></i> Mastermind</h4>
+                        <p style="color: var(--text-muted); font-size: 1.05rem">Jemmy Francisco</p>
+                        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.4rem">Chief Dreamer & Code Architect</p>
                     </div>
                     <div>
-                    <h4 style="margin-bottom: 1rem; color: var(--text-main)"><i class="fas fa-envelope" style="margin-right: 0.75rem; color: var(--primary)"></i> Contact</h4>
-                    <p style="color: var(--text-muted)"><a href="mailto:jemmyfrancisco30@gmail.com" style="color: inherit; text-decoration: none">jemmyfrancisco30@gmail.com</a></p>
+                        <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem"><i class="fas fa-paper-plane" style="margin-right: 0.75rem; color: var(--primary)"></i> Say Hello!</h4>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0.5rem">
+                            <i class="fas fa-envelope-open-text" style="width: 20px; font-size: 0.9rem"></i> <a href="mailto:jemmyfrancisco30@gmail.com" style="color: inherit; text-decoration: none">jemmyfrancisco30@gmail.com</a>
+                        </p>
+                        <p style="color: var(--text-muted); font-size: 0.95rem">
+                            <i class="fab fa-facebook" style="width: 20px; font-size: 0.9rem"></i> <a href="https://facebook.com/jemmy.francisco.98" target="_blank" style="color: inherit; text-decoration: none">Jemmy Francisco</a>
+                        </p>
                     </div>
                 </div>
                 
-                <div style="margin-top: 3rem; text-align: center">
-                    <button id="about-tutorial-btn" class="nav-item-btn" style="display: inline-flex; width: auto; border: 1px solid var(--glass-border); justify-content: center">
-                        Take a Tour of the App
+                <div style="margin-top: 3.5rem; text-align: center">
+                    <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem">"Code is temporary, thoughts are forever." — Someone smart, probably.</p>
+                    <button id="about-tutorial-btn" class="btn-primary" style="display: inline-flex; width: auto; justify-content: center">
+                        <i class="fas fa-rocket" style="margin-right: 10px"></i> Take the Grand Tour
                     </button>
                 </div>
             </div>
@@ -563,9 +570,10 @@ async function loadNotes() {
                             </button>
                         </div>
                         <h3 style="margin-bottom: 0.5rem">${note.title}</h3>
+                        ${note.description ? `<p style="color: var(--primary-light); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase;">${note.description}</p>` : ''}
                         ${note.content ? `<p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${note.content}</p>` : ''}
                         <div style="margin-top: auto; padding-top: 1rem; font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between">
-                            <span><i class="fas fa-pen" style="margin-right: 4px"></i> Edit</span>
+                            <span><i class="fas fa-pen" style="margin-right: 4px"></i> Open</span>
                             <span>${note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Just now'}</span>
                         </div>
                     `;
@@ -638,8 +646,13 @@ function openNoteModal(note = null) {
                 </div>
 
                 <div style="margin-bottom: 1.5rem">
-                    <label style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block">Content (Optional)</label>
-                    <textarea id="note-content" placeholder="Jot down your thoughts here..." style="height: 180px">${note?.content || ''}</textarea>
+                    <label style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block">Brief Purpose (Description)</label>
+                    <input type="text" id="note-description" placeholder="E.g., Final Exam Prep, Client Meeting..." value="${note?.description || ''}">
+                </div>
+
+                <div style="margin-bottom: 1.5rem">
+                    <label style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block">Main Content (Optional)</label>
+                    <textarea id="note-content" placeholder="Jot down your thoughts here..." style="height: 150px">${note?.content || ''}</textarea>
                 </div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem">
@@ -657,6 +670,7 @@ function openNoteModal(note = null) {
     document.getElementById('save-note').onclick = async (e) => {
         const btn = e.target.closest('button');
         const title = document.getElementById('note-title').value.trim();
+        const description = document.getElementById('note-description').value.trim();
         const content = document.getElementById('note-content').value.trim();
         const category = document.getElementById('note-category').value;
 
@@ -681,7 +695,7 @@ function openNoteModal(note = null) {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ title, content, category })
+                    body: JSON.stringify({ title, description, content, category })
                 });
             } else {
                 response = await fetch(`${API_BASE_URL}/api/notes`, {
@@ -690,7 +704,7 @@ function openNoteModal(note = null) {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ title, content, category })
+                    body: JSON.stringify({ title, description, content, category })
                 });
             }
 
