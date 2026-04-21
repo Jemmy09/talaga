@@ -8,6 +8,33 @@ require('dotenv').config();
 // Global SSL Bypass for Aiven/Render connectivity
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+// --- SELF-EXECUTING DATABASE INITIALIZER ---
+(async () => {
+  console.log("🛠️  GHOST SETUP: Checking Database Tables...");
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notes (
+          id SERIAL PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          content TEXT,
+          category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS feedback (
+          id SERIAL PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL,
+          text TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("✨ GHOST SETUP: SUCCESS! Tables are ready.");
+  } catch (err) {
+    console.error("❌ GHOST SETUP FAILED:", err.message);
+  }
+})();
+
 const app = express();
 const port = process.env.PORT || 3000;
 
