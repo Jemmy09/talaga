@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talaga - Premium Personal Space for Your Notes</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Talaga is a modern, secure, and elegantly designed personal dashboard for organizing notes, to-do lists, and accounts.">
+    <meta name="keywords" content="notes, productivity, personal organizer, talaga, secure notes">
+    <meta name="author" content="Jemmy Francisco">
+    
+    <!-- Social Meta Tags -->
+    <meta property="og:title" content="Talaga - Premium Personal Space">
+    <meta property="og:description" content="Organize your thoughts with the most elegant note-taking app.">
+    <meta property="og:image" content="images/logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Firebase Compat SDKs (Works on file:// and web) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+</head>
+<body>
+    <div id="app-root">
+        <!-- Mobile Header (Visible on small screens) -->
+        <header class="mobile-header">
+            <div class="nav-brand">
+                <img src="images/logo.png" alt="Talaga Logo" class="logo-img">
+                <span class="brand-name">Talaga</span>
+            </div>
+            <button id="menu-toggle" class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </header>
+
+        <!-- Navigation Sidebar -->
+        <nav id="main-nav" class="hidden">
+            <div class="nav-brand">
+                <img src="images/logo.png" alt="Talaga Logo" class="logo-img">
+                <span class="brand-name">Talaga</span>
+            </div>
+            <ul class="nav-links">
+                <li data-view="dashboard" class="active">
+                    <i class="fas fa-th-large"></i> <span>Dashboard</span>
+                </li>
+                <li data-view="profile">
+                    <i class="fas fa-user-circle"></i> <span>Profile</span>
+                </li>
+                <li data-view="settings">
+                    <i class="fas fa-cog"></i> <span>Settings</span>
+                </li>
+                <li data-view="about">
+                    <i class="fas fa-info-circle"></i> <span>About</span>
+                </li>
+                <li data-view="feedback">
+                    <i class="fas fa-comment-dots"></i> <span>Feedback</span>
+                </li>
+                <li data-view="help">
+                    <i class="fas fa-question-circle"></i> <span>Help</span>
+                </li>
+            </ul>
+            <div class="nav-footer">
+                <button id="logout-btn" class="nav-item-btn">
+                    <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <div id="view-container">
+                <!-- Views will be injected here via app.js -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Spinner Overlay -->
+    <div id="loading-spinner" class="spinner-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Modals (Note editor, tutorial, etc.) -->
+    <div id="modal-container" class="modal-overlay hidden"></div>
+
+    <!-- Main Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local development
+node_modules/
+dist/
+build/
+.env
+
+# Mobile specific
+.expo/
+.npm/
+
+# Antigravity artifacts (ignore if you don't want AI logs in your repo)
+.gemini/
+brain/
+implementation_plan.md
+task.md
+walkthrough.md
+project_health_report.md
+git_setup_plan.md
