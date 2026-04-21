@@ -117,11 +117,14 @@ async function fetchAllNotes() {
         const response = await fetch(`${API_BASE_URL}/api/notes`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error('Failed to fetch from backend');
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.details || errData.error || `Status ${response.status}`);
+        }
         notes = await response.json();
     } catch (e) {
         console.error("Global Fetch Error:", e);
-        showToast(`Connection Issue: ${e.message}. Please wait a moment for the server to wake up and refresh.`, "error");
+        showToast(`Server Response: ${e.message}`, "error");
     }
 }
 
