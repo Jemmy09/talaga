@@ -96,8 +96,8 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Database Insert Error:', err.message);
+    res.status(500).json({ error: 'Database error', details: err.message });
   }
 });
 
@@ -199,8 +199,21 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Health Check
-app.get('/health', (req, res) => res.json({ status: 'ok', database: 'connected' }));
+// Health Check (Deep Verification)
+app.get('/health', async (req, res) => {
+  try {
+    const dbCheck = await pool.query('SELECT 1');
+    res.json({ 
+        status: 'ok', 
+        database: 'connected', 
+        ping: 'success',
+        timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('❌ Health Check Failed:', err.message);
+    res.status(500).json({ status: 'error', database: 'disconnected', details: err.message });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Talaga Backend running at http://localhost:${port}`);

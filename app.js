@@ -346,7 +346,9 @@ function renderProfile() {
     const stats = {
         todo: notes.filter(n => n.category === 'todo').length,
         account: notes.filter(n => n.category === 'account').length,
-        info: notes.filter(n => n.category === 'info').length
+        info: notes.filter(n => n.category === 'info').length,
+        business: notes.filter(n => n.category === 'business').length,
+        student: notes.filter(n => n.category === 'student').length
     };
 
     viewContainer.innerHTML = `
@@ -371,6 +373,17 @@ function renderProfile() {
                     <div style="background: var(--glass-bg); padding: 1.5rem; border-radius: 20px; text-align: center; border: 1px solid var(--glass-border)">
                         <h2 style="font-size: 1.5rem; color: var(--primary)">${stats.info}</h2>
                         <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Notes</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem">
+                    <div style="background: var(--glass-bg); padding: 1.5rem; border-radius: 20px; text-align: center; border: 1px solid var(--glass-border)">
+                        <h2 style="font-size: 1.5rem; color: var(--secondary)">${stats.business}</h2>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Business</p>
+                    </div>
+                    <div style="background: var(--glass-bg); padding: 1.5rem; border-radius: 20px; text-align: center; border: 1px solid var(--glass-border)">
+                        <h2 style="font-size: 1.5rem; color: #3b82f6;">${stats.student}</h2>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Student</p>
                     </div>
                 </div>
             </div>
@@ -614,6 +627,10 @@ function openNoteModal(note = null) {
                         <option value="info" ${note?.category === 'info' ? 'selected' : ''}>Information</option>
                         <option value="todo" ${note?.category === 'todo' ? 'selected' : ''}>To-Do</option>
                         <option value="account" ${note?.category === 'account' ? 'selected' : ''}>Account</option>
+                        <option value="business" ${note?.category === 'business' ? 'selected' : ''}>Business</option>
+                        <option value="student" ${note?.category === 'student' ? 'selected' : ''}>Student</option>
+                        <option value="personal" ${note?.category === 'personal' ? 'selected' : ''}>Personal</option>
+                        <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
                     </select>
                 </div>
 
