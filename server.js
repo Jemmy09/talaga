@@ -8,16 +8,27 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- Firebase Admin Initialization ---
-// You will need to download your Service Account JSON from Firebase Console
-// and either point to the file path or set it as an environment variable.
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-    ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString())
-    : require('./serviceAccountKey.json');
+// --- Pre-flight Checks (Professional Security) ---
+if (!process.env.DATABASE_URL) {
+    console.warn('⚠️ WARNING: DATABASE_URL is not set. Database operations will fail.');
+}
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+let serviceAccount;
+try {
+    serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+        ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString())
+        : require('./serviceAccountKey.json');
+    
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('✅ Firebase Admin initialized successfully.');
+} catch (error) {
+    console.error('❌ CRITICAL ERROR: Firebase Service Account missing or invalid.');
+    console.error('Ensure FIREBASE_SERVICE_ACCOUNT environment variable is set in Render.');
+    // We don't exit(1) immediately to allow the health checks to potentially run or 
+    // to keep the port open for debugging, but the app will be in a degraded state.
+}
 
 // --- PostgreSQL Connection (Aiven) ---
 const pool = new Pool({
@@ -153,6 +164,35 @@ app.post('/api/feedback', authenticateUser, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
+// Root Landing Page (Professional Confirmation)
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Talaga API | Professional Workspace</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Outfit', sans-serif; background: #0b0f1a; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+            .container { padding: 3rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 32px; backdrop-filter: blur(20px); }
+            h1 { color: #6366f1; margin-bottom: 1rem; }
+            p { color: #94a3b8; margin: 0; }
+            .badge { display: inline-block; padding: 6px 16px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 100px; font-size: 0.85rem; font-weight: bold; margin-top: 1.5rem; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Talaga Backend Server</h1>
+            <p>Your premium personal dashboard API is fully operational.</p>
+            <div class="badge">● SYSTEM LIVE</div>
+        </div>
+    </body>
+    </html>
+  `);
 });
 
 // Health Check
