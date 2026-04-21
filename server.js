@@ -8,10 +8,11 @@ require('dotenv').config();
 // Global SSL Bypass for Aiven/Render connectivity
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-// --- SELF-EXECUTING DATABASE INITIALIZER ---
+// --- HEAVY-DUTY DATABASE INITIALIZER ---
 (async () => {
-  console.log("🛠️  GHOST SETUP: Checking Database Tables...");
+  console.log("🛠️  INITIATING DATABASE FORCE-BUILD...");
   try {
+    // We create the tables one by one to avoid multi-statement blocks that some DBs block
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notes (
           id SERIAL PRIMARY KEY,
@@ -22,6 +23,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
           category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS feedback (
           id SERIAL PRIMARY KEY,
           user_id VARCHAR(255) NOT NULL,
@@ -29,9 +33,10 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✨ GHOST SETUP: SUCCESS! Tables are ready.");
+    
+    console.log("✨ DATABASE IS ARMED AND READY!");
   } catch (err) {
-    console.error("❌ GHOST SETUP FAILED:", err.message);
+    console.error("❌ DATABASE INITIALIZER FAILED:", err.message);
   }
 })();
 
