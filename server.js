@@ -8,11 +8,19 @@ require('dotenv').config();
 // Global SSL Bypass for Aiven/Render connectivity
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+// --- PostgreSQL Connection (Aiven) ---
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for Aiven/Render cross-service security
+  }
+});
+
 // --- HEAVY-DUTY DATABASE INITIALIZER ---
+// Move this here so 'pool' is defined before it runs!
 (async () => {
   console.log("🛠️  INITIATING DATABASE FORCE-BUILD...");
   try {
-    // We create the tables one by one to avoid multi-statement blocks that some DBs block
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notes (
           id SERIAL PRIMARY KEY,
@@ -29,7 +37,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       CREATE TABLE IF NOT EXISTS feedback (
           id SERIAL PRIMARY KEY,
           user_id VARCHAR(255) NOT NULL,
-          text TEXT NOT NULL,
+          user_name VARCHAR(255),
+          message TEXT NOT NULL,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -41,7 +50,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 })();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3010; // Standard professional port
 
 // --- Pre-flight Checks (Professional Security) ---
 if (!process.env.DATABASE_URL) {
@@ -61,17 +70,7 @@ try {
 } catch (error) {
     console.error('❌ CRITICAL ERROR: Firebase Service Account missing or invalid.');
     console.error('Ensure FIREBASE_SERVICE_ACCOUNT environment variable is set in Render.');
-    // We don't exit(1) immediately to allow the health checks to potentially run or 
-    // to keep the port open for debugging, but the app will be in a degraded state.
 }
-
-// --- PostgreSQL Connection (Aiven) ---
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Required for Aiven/Render cross-service security
-  }
-});
 
 // --- Middleware ---
 app.use(cors({
