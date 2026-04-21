@@ -42,7 +42,11 @@ const pool = new Pool({
 });
 
 // --- Middleware ---
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allows all for maximum accessibility, but explicit headers are added below
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // --- Auth Middleware ---

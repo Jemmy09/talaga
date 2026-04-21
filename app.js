@@ -121,7 +121,7 @@ async function fetchAllNotes() {
         notes = await response.json();
     } catch (e) {
         console.error("Global Fetch Error:", e);
-        showToast("Backend connection issue. Check if server is running.", "error");
+        showToast(`Connection Issue: ${e.message}. Please wait a moment for the server to wake up and refresh.`, "error");
     }
 }
 
