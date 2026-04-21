@@ -33,11 +33,8 @@ try {
 // --- PostgreSQL Connection (Aiven) ---
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: fs.existsSync('./ca.pem') ? {
-    ca: fs.readFileSync('./ca.pem').toString(),
-    rejectUnauthorized: true 
-  } : {
-    rejectUnauthorized: false // Fallback for easier setup
+  ssl: {
+    rejectUnauthorized: false // Required for Aiven/Render cross-service security
   }
 });
 
