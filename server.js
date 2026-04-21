@@ -79,8 +79,8 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Database Query Error:', err.message);
+    res.status(500).json({ error: 'Database error', details: err.message });
   }
 });
 
