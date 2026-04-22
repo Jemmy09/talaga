@@ -392,19 +392,25 @@ function openNoteModal(noteId = null) {
     
     const renderReadView = () => {
         viewContainer.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem">
-                <div>
-                    <h1 style="font-size: 2rem; margin-bottom: 0.5rem">${note ? note.title : 'New Note'}</h1>
-                    <p style="color: var(--text-dim); font-size: 0.9rem">${new Date(note ? note.updated_at : Date.now()).toLocaleString()}</p>
+            <div style="animation: slideUp 0.4s ease-out">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1.5rem">
+                    <div style="flex: 1">
+                        <span style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem">${note?.category || 'General Note'}</span>
+                        <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.2">${note ? note.title : 'New Note'}</h1>
+                        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem">Last updated: ${new Date(note ? (note.updated_at || note.created_at) : Date.now()).toLocaleString()}</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem">
+                        <button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>
+                        <button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>
+                        <button onclick="closeModal()" class="delete-btn" title="Close"><i class="fas fa-times"></i></button>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 0.5rem">
-                    <button id="edit-mode-btn" class="delete-btn" style="color: var(--primary)"><i class="fas fa-edit"></i></button>
-                    <button id="delete-modal-btn" class="delete-btn"><i class="fas fa-trash"></i></button>
-                    <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
+                <div style="font-size: 1.25rem; line-height: 2; color: #e2e8f0; white-space: pre-wrap; min-height: 300px; padding: 0.5rem 0">
+                    ${note ? note.content : 'No content provided.'}
                 </div>
-            </div>
-            <div style="font-size: 1.15rem; line-height: 1.8; color: var(--text-main); white-space: pre-wrap; min-height: 200px">
-                ${note ? note.content : 'No content.'}
+                <div style="margin-top: 3rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem; display: flex; justify-content: flex-end">
+                    <button onclick="closeModal()" class="nav-item-btn" style="width: auto; padding: 0.5rem 1.5rem">Back to Sanctuary</button>
+                </div>
             </div>
         `;
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
@@ -413,17 +419,20 @@ function openNoteModal(noteId = null) {
 
     const renderEditView = () => {
         viewContainer.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
-                <h2 style="font-size: 1.2rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px">Editor Mode</h2>
-                <div style="display: flex; gap: 0.5rem">
+            <div style="animation: slideUp 0.4s ease-out">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
+                    <div style="display: flex; align-items: center; gap: 0.75rem">
+                        <div style="width: 10px; height: 10px; background: var(--primary); border-radius: 50%; box-shadow: var(--glow)"></div>
+                        <h2 style="font-size: 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 2px">Studio Mode</h2>
+                    </div>
                     <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
                 </div>
-            </div>
-            <input id="note-title-input" class="modal-input" placeholder="Note Title" value="${note ? note.title : ''}" style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem">
-            <textarea id="note-content-input" class="modal-input" placeholder="Begin your thoughts..." style="font-size: 1.1rem; min-height: 350px; line-height: 1.8; resize: none">${note ? note.content : ''}</textarea>
-            <div style="display: flex; gap: 1rem; margin-top: 2rem">
-                <button id="save-note-btn" class="btn-primary" style="flex: 1">Save Changes</button>
-                ${noteId ? `<button id="cancel-edit-btn" class="nav-item-btn" style="border: 1px solid var(--glass-border)">Cancel</button>` : ''}
+                <input id="note-title-input" class="modal-input" placeholder="Give your note a title..." value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
+                <textarea id="note-content-input" class="modal-input" placeholder="What's on your mind?" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
+                <div style="display: flex; gap: 1rem">
+                    <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Sync Changes</button>
+                    ${noteId ? `<button id="cancel-edit-btn" class="btn-primary" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted)">Discard</button>` : ''}
+                </div>
             </div>
         `;
         
@@ -433,7 +442,7 @@ function openNoteModal(noteId = null) {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
             if (!title && !content) return;
-            toggleSpinner(true, 'SAVING');
+            toggleSpinner(true, 'SYNCHRONIZING');
             const token = await currentUser.getIdToken();
             const method = noteId ? 'PUT' : 'POST';
             const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
