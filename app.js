@@ -215,20 +215,20 @@ function renderProfile() {
 
 function renderSettings() {
     viewContainer.innerHTML = `
-        <div class="settings-container" style="animation: slideUp 0.6s ease-out; max-width: 600px">
-            <h1>Settings</h1>
-            <div style="background: var(--glass-bg); border-radius: 2rem; border: 1px solid var(--glass-border); padding: 2.5rem; display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem">
+        <div class="settings-container" style="animation: slideUp 0.6s ease-out; max-width: 600px; margin: 0 auto; text-align: center">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem">Settings</h1>
+            <div style="background: var(--glass-bg); border-radius: 2rem; border: 1px solid var(--glass-border); padding: 2.5rem; display: flex; flex-direction: column; gap: 2rem; text-align: left">
                 <div style="display: flex; justify-content: space-between; align-items: center">
                     <div><h3>Ultra Dark Mode</h3><p style="font-size: 0.8rem; color: var(--text-dim)">For elite night focus.</p></div>
                     <label class="switch"><input type="checkbox" id="dark-toggle"><span class="slider round"></span></label>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center">
                     <div><h3>Cloud Sync</h3><p style="font-size: 0.8rem; color: var(--text-dim)">Global synchronization active.</p></div>
-                    <label class="switch"><input type="checkbox" checked><span class="slider round"></span></label>
+                    <label class="switch"><input type="checkbox" checked disabled><span class="slider round"></span></label>
                 </div>
                 <div style="border-top: 1px solid var(--glass-border); padding-top: 2rem; display: flex; flex-direction: column; gap: 1rem">
-                    <button class="btn-primary" style="background: var(--warning); width: 100%" onclick="wipeAllData()">Wipe All Data</button>
-                    <button class="btn-primary" style="background: var(--error); width: 100%" onclick="deleteAccount()">Delete Account</button>
+                    <button class="btn-primary" style="background: #f43f5e; width: 100%; box-shadow: none" onclick="wipeAllData()">Wipe All Data</button>
+                    <button class="btn-primary" style="background: #f43f5e; width: 100%; box-shadow: none" onclick="deleteAccount()">Delete Account</button>
                 </div>
                 <button class="btn-primary" style="width: 100%; margin-top: 1rem" onclick="saveSettings()">Save Changes</button>
             </div>
