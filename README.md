@@ -29,20 +29,21 @@ We didn't just throw this together in a weekend (okay, maybe we did, but it was 
 
 ### 1. The Foundation (Database)
 1. Head over to your **Aiven Console**.
-2. Grab the code from **[setup.sql](setup.sql)** and run it in the Aiven query editor. 
+2. Grab the code from **[backend/setup.sql](backend/setup.sql)** and run it in the Aiven query editor. 
 3. *Boom!* Your tables are ready for action.
 
 ### 2. The Engine (Backend)
 1. Fork this repo and link it to a **New Web Service** on **Render**.
-2. Add these Environment Variables (the VIP list):
+2. **IMPORTANT**: In the Render settings, set the **Root Directory** to `backend`.
+3. Add these Environment Variables:
    - `DATABASE_URL`: Your Aiven Connection URI.
-   - `FIREBASE_SERVICE_ACCOUNT`: Your Base64 encoded JSON (See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)**).
-3. Once Render gives you that **Live URL**, copy it. You're almost there!
+   - `FIREBASE_SERVICE_ACCOUNT`: Your Base64 encoded JSON (See **[backend/FIREBASE_SETUP.md](backend/FIREBASE_SETUP.md)**).
+4. Once Render gives you that **Live URL**, copy it.
 
 ### 3. The Control Center (Frontend)
-1. Open **[app.js](app.js)** and find `API_BASE_URL` (around line 30).
+1. Open **[app.js](app.js)** and find `API_BASE_URL`.
 2. Replace the placeholder with your fresh Render URL.
-3. Push to GitHub, and let the sync script do the heavy lifting.
+3. Simply run `.\sync.ps1` in your terminal to push everything to GitHub.
 
 ---
 

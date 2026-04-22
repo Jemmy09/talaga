@@ -1,20 +1,27 @@
 # Talaga Professional Sync Tool
-# Created by Antigravity
+# 🚀 High-Efficiency Update & Deploy
 
-Write-Host "🚀 Starting Professional Sync..." -ForegroundColor Cyan
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+Write-Host "--- Talaga Professional Sync ($timestamp) ---" -ForegroundColor Cyan
 
 # 1. Stage all changes
+Write-Host "🔍 Staging changes..." -ForegroundColor Gray
 git add .
 
-# 2. Get commit message (defaults to 'Standard Professional Update')
-$msg = Read-Host "Enter commit message (Press Enter for 'Standard Professional Update')"
-if ([string]::IsNullOrWhiteSpace($msg)) { $msg = "Standard Professional Update" }
+# 2. Get commit message
+Write-Host "💬 Enter commit message [Press Enter for 'Professional Update - $timestamp']:" -NoNewline
+$msg = Read-Host
+if ([string]::IsNullOrWhiteSpace($msg)) { $msg = "Professional Update - $timestamp" }
 
 # 3. Commit locally
+Write-Host "💾 Committing..." -ForegroundColor Gray
 git commit -m "$msg"
 
-# 4. Push to master (local) and main (Render production)
-Write-Host "📤 Pushing to GitHub..." -ForegroundColor Yellow
+# 4. Push to GitHub
+# Note: This pushes your master to remote main to keep Render & GitHub Pages in sync
+Write-Host "📤 Pushing to GitHub (origin master:main)..." -ForegroundColor Yellow
 git push origin master:main
 
-Write-Host "✅ Sync Complete! Your changes are now live on GitHub and Render." -ForegroundColor Green
+Write-Host "✅ SYNC COMPLETE!" -ForegroundColor Green
+Write-Host "🌐 Frontend: Live on GitHub Pages" -ForegroundColor Gray
+Write-Host "⚙️ Backend: Deploying on Render (check your dashboard)" -ForegroundColor Gray
