@@ -91,8 +91,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// --- Auth Middleware ---
-// Verifies the Firebase ID Token sent from the frontend
+// --- Authentication Middleware (Professional Security) ---
 const authenticateUser = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
