@@ -98,6 +98,16 @@ function initApp() {
         };
     });
 
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.onclick = () => {
+            toggleSpinner(true, 'SIGNING OUT');
+            auth.signOut().then(() => {
+                showToast('Signed out successfully', 'success');
+            });
+        };
+    }
+
     const menuToggle = document.getElementById('menu-toggle');
     if (menuToggle) menuToggle.onclick = () => mainNav.classList.toggle('open');
 }
