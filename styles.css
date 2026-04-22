@@ -39,6 +39,11 @@
     --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* Reset */
 * {
     margin: 0;
@@ -395,6 +400,7 @@ input:checked + .slider:before { transform: translateX(24px); }
     padding: 3rem;
     position: relative;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* UI Elements */
