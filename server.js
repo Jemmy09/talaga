@@ -5,14 +5,13 @@ const cors = require('cors');
 const fs = require('fs');
 require('dotenv').config();
 
-// Global SSL Bypass for Aiven/Render connectivity
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// NOTE: Do NOT set NODE_TLS_REJECT_UNAUTHORIZED=0 in production.
 
 // --- PostgreSQL Connection (Aiven) ---
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Required for Aiven/Render cross-service security
+    rejectUnauthorized: true
   }
 });
 
@@ -73,8 +72,17 @@ try {
 }
 
 // --- Middleware ---
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://jemmyfrancisco30.github.io' // Replace with your actual GitHub Pages URL
+];
+
 app.use(cors({
-  origin: '*', // Allows all for maximum accessibility, but explicit headers are added below
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
