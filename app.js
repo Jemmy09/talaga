@@ -361,6 +361,90 @@ function renderProfile() {
     toggleSpinner(false);
 }
 
+function renderFeedback() {
+    viewContainer.innerHTML = `
+        <div class="feedback-container" style="animation: slideUp 0.6s ease-out; max-width: 600px; margin: 0 auto">
+            <h1 style="margin-bottom: 1rem">Your Voice Matters</h1>
+            <p style="color: var(--text-muted); margin-bottom: 3rem">Help us shape the future of Talaga. What's on your mind?</p>
+            
+            <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 2.5rem; border-radius: 2rem">
+                <textarea id="feedback-input" class="modal-input" placeholder="Feedback, feature requests, or a simple hello..." style="min-height: 200px; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border)"></textarea>
+                <button id="send-feedback-btn" class="btn-primary" style="width: 100%">Send Feedback</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('send-feedback-btn').onclick = () => {
+        const val = document.getElementById('feedback-input').value;
+        if (!val.trim()) return;
+        showToast("Thank you! Your feedback has been sent.", "success");
+        navigate('dashboard');
+    };
+    toggleSpinner(false);
+}
+
+function renderHelp() {
+    viewContainer.innerHTML = `
+        <div class="help-container" style="animation: slideUp 0.6s ease-out; max-width: 700px; margin: 0 auto">
+            <h1 style="margin-bottom: 3rem">How can we help?</h1>
+            <div style="display: grid; gap: 1.5rem">
+                <div onclick="startTutorial()" style="background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 1.5rem">
+                    <div style="width: 50px; height: 50px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 0.2rem">Interactive Guide</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-dim)">Learn the essentials of Talaga in 60 seconds.</p>
+                    </div>
+                </div>
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 1.5rem; border-radius: 1.5rem; display: flex; align-items: center; gap: 1.5rem">
+                    <div style="width: 50px; height: 50px; background: rgba(99, 102, 241, 0.1); color: var(--text-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 0.2rem">Keyboard Shortcuts</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-dim)">Alt + N: New Note | Esc: Close Modal</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    toggleSpinner(false);
+}
+
+function startTutorial() {
+    const steps = [
+        { title: "Welcome to Talaga", text: "Your sanctuary for organized thoughts. Ready for a quick tour?", btn: "Let's Go" },
+        { title: "Dashboard", text: "All your ideas live here. They sync automatically to your professional workspace.", btn: "Next" },
+        { title: "Create Anything", text: "Click 'New Note' to start writing. Talaga saves your work in real-time.", btn: "Next" },
+        { title: "Stay Mobile", text: "The sidebar works perfectly on all devices. Click the menu icon to toggle it.", btn: "Finish" }
+    ];
+    
+    let currentStep = 0;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay flex';
+    overlay.style.background = 'rgba(0,0,0,0.8)';
+    
+    const showStep = () => {
+        const s = steps[currentStep];
+        overlay.innerHTML = `
+            <div class="modal-content" style="text-align: center; max-width: 400px">
+                <div style="font-size: 3rem; color: var(--primary); margin-bottom: 1.5rem"><i class="fas fa-magic"></i></div>
+                <h2 style="margin-bottom: 1rem">${s.title}</h2>
+                <p style="color: var(--text-dim); line-height: 1.6; margin-bottom: 2rem">${s.text}</p>
+                <button id="tutorial-next" class="btn-primary" style="width: 100%">${s.btn}</button>
+            </div>
+        `;
+        document.getElementById('tutorial-next').onclick = () => {
+            currentStep++;
+            if (currentStep < steps.length) showStep();
+            else overlay.remove();
+        };
+    };
+    
+    document.body.appendChild(overlay);
+    showStep();
+}
+
 function renderSettings() {
     viewContainer.innerHTML = `
         <div class="settings-container" style="animation: slideUp 0.6s ease-out; max-width: 600px">
