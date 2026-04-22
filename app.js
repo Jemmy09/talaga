@@ -388,7 +388,9 @@ async function loadNotes() {
 function openNoteModal(noteId = null) {
     const modal = document.getElementById('note-modal');
     const viewContainer = modal.querySelector('.modal-content');
-    const note = noteId ? notes.find(n => n.id === noteId) : null;
+    
+    // Robust ID matching (handles string vs number from DB)
+    const note = noteId ? notes.find(n => n.id == noteId) : null;
     
     const renderReadView = () => {
         viewContainer.innerHTML = `
