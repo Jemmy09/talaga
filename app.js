@@ -6,11 +6,8 @@ window.onerror = function (msg, url, line, col, error) {
 };
 
 // --- Firebase Configuration ---
-// IMPORTANT: These are client-side Firebase keys (safe to expose per Firebase docs),
-// but restrict your API key in the Google Cloud Console to your domain only.
-// See: https://console.cloud.google.com/apis/credentials
 const firebaseConfig = {
-    apiKey: "AIzaSyD3H3gQOsE9sAF6DUW69vytH6-v3fQvhzQ",
+    apiKey: "AIzaSyABJZRDkwNTs0Ujs2wpnSSmNMlY4uinKNo",
     authDomain: "francisco-61572.firebaseapp.com",
     databaseURL: "https://francisco-61572.firebaseio.com",
     projectId: "francisco-61572",
@@ -204,8 +201,8 @@ function renderLogin() {
             <div class="auth-container">
                 <div style="text-align: center; margin-bottom: 2.5rem">
                     <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))">
-                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Login</h1>
-                    <p style="color: var(--text-muted)">Your personal space for clear thinking.</p>
+                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Welcome Back</h1>
+                    <p style="color: var(--text-muted)">Your premium space for clear thinking.</p>
                 </div>
                 
                 <button id="google-signin" class="google-btn">
@@ -242,7 +239,7 @@ function renderRegister() {
             <div class="auth-container">
                 <div style="text-align: center; margin-bottom: 2.5rem">
                     <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))">
-                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Register</h1>
+                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Join Talaga</h1>
                     <p style="color: var(--text-muted)">Start your journey towards professional organization.</p>
                 </div>
                 
@@ -338,7 +335,7 @@ function renderAbout() {
                             <i class="fas fa-envelope-open-text" style="width: 20px; font-size: 0.9rem"></i> <a href="mailto:jemmyfrancisco30@gmail.com" style="color: inherit; text-decoration: none">jemmyfrancisco30@gmail.com</a>
                         </p>
                         <p style="color: var(--text-muted); font-size: 0.95rem">
-                            <i class="fab fa-facebook" style="width: 20px; font-size: 0.9rem"></i> <a href="https://facebook.com/jemmy.francisco.98" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none">Jemmy Francisco</a>
+                            <i class="fab fa-facebook" style="width: 20px; font-size: 0.9rem"></i> <a href="https://facebook.com/jemmy.francisco.98" target="_blank" style="color: inherit; text-decoration: none">Jemmy Francisco</a>
                         </p>
                     </div>
                 </div>
@@ -371,7 +368,7 @@ function renderFeedback() {
                         <textarea id="feedback-text" placeholder="I suggest adding..." required style="height: 150px; resize: none;"></textarea>
                     </div>
                     <button type="submit" class="btn-primary" style="justify-content: center; width: 100%; padding: 1rem">
-                        Send Feedback
+                        Send Professional Feedback
                     </button>
                 </form>
             </div>
@@ -443,55 +440,36 @@ function renderProfile() {
         `;
     toggleSpinner(false);
 
-    document.getElementById('edit-name-btn').onclick = () => {
-        openInputModal({
-            title: 'Update Display Name',
-            label: 'New Name',
-            placeholder: 'Enter your display name',
-            defaultValue: currentUser?.displayName || '',
-            onConfirm: async (newName) => {
-                if (!newName.trim()) return;
-                toggleSpinner(true);
-                try {
-                    await currentUser.updateProfile({ displayName: newName.trim() });
-                    document.getElementById('profile-name').innerText = newName.trim();
-                    showToast('Profile name updated!', 'success');
-                    navigate('dashboard');
-                    setTimeout(() => navigate('profile'), 100);
-                } catch (e) {
-                    showToast(e.message, 'error');
-                } finally {
-                    toggleSpinner(false);
-                }
+    document.getElementById('edit-name-btn').onclick = async () => {
+        const newName = prompt("Enter new display name:", currentUser?.displayName || '');
+        if (newName && newName.trim() !== '') {
+            toggleSpinner(true);
+            try {
+                await currentUser.updateProfile({ displayName: newName.trim() });
+                document.getElementById('profile-name').innerText = newName.trim();
+                showToast("Profile name updated!", "success");
+                navigate('dashboard');
+                setTimeout(()=>navigate('profile'), 100);
+            } catch (e) {
+                showToast(e.message, "error");
             }
-        });
+            toggleSpinner(false);
+        }
     };
 
-    document.getElementById('edit-pic-btn').onclick = () => {
-        openInputModal({
-            title: 'Update Profile Picture',
-            label: 'Image URL (https:// only)',
-            placeholder: 'https://example.com/photo.jpg',
-            defaultValue: currentUser?.photoURL || '',
-            onConfirm: async (newPic) => {
-                const trimmed = newPic.trim();
-                if (!trimmed) return;
-                if (!trimmed.startsWith('https://')) {
-                    showToast('Only HTTPS URLs are allowed.', 'error');
-                    return;
-                }
-                toggleSpinner(true);
-                try {
-                    await currentUser.updateProfile({ photoURL: trimmed });
-                    document.getElementById('profile-img').src = trimmed;
-                    showToast('Profile picture updated!', 'success');
-                } catch (e) {
-                    showToast(e.message, 'error');
-                } finally {
-                    toggleSpinner(false);
-                }
+    document.getElementById('edit-pic-btn').onclick = async () => {
+        const newPic = prompt("Enter new profile picture URL:", currentUser?.photoURL || '');
+        if (newPic && newPic.trim() !== '') {
+            toggleSpinner(true);
+            try {
+                await currentUser.updateProfile({ photoURL: newPic.trim() });
+                document.getElementById('profile-img').src = newPic.trim();
+                showToast("Profile picture updated!", "success");
+            } catch (e) {
+                showToast(e.message, "error");
             }
-        });
+            toggleSpinner(false);
+        }
     };
 }
 
@@ -545,7 +523,7 @@ function renderSettings() {
 
     const isUltraDark = document.body.classList.contains('ultra-dark');
     const isReducedMotion = document.body.classList.contains('reduced-motion');
-
+    
     if (isUltraDark) document.getElementById('theme-toggle').classList.add('active');
     if (isReducedMotion) document.getElementById('motion-toggle').classList.add('active');
 
@@ -555,13 +533,13 @@ function renderSettings() {
     document.getElementById('save-settings').onclick = () => {
         const darkActive = document.getElementById('theme-toggle').classList.contains('active');
         const motionActive = document.getElementById('motion-toggle').classList.contains('active');
-
+        
         if (darkActive) document.body.classList.add('ultra-dark');
         else document.body.classList.remove('ultra-dark');
-
+        
         if (motionActive) document.body.classList.add('reduced-motion');
         else document.body.classList.remove('reduced-motion');
-
+        
         showToast("Settings saved successfully!", "success");
     };
 
@@ -589,8 +567,8 @@ function renderSettings() {
         showToast("Notes exported to Markdown!", "success");
     };
 
-    document.getElementById('clear-data').onclick = () => {
-        openConfirmModal("Are you sure? This will delete ALL your notes permanently.", async () => {
+    document.getElementById('clear-data').onclick = async () => {
+        if (confirm("Are you sure? This will delete ALL your notes permanently from Aiven.")) {
             toggleSpinner(true);
             try {
                 const token = await auth.currentUser.getIdToken(true);
@@ -608,11 +586,11 @@ function renderSettings() {
             } finally {
                 toggleSpinner(false);
             }
-        });
+        }
     };
 
-    document.getElementById('delete-account').onclick = () => {
-        openConfirmModal("Are you sure you want to completely delete your account? This is permanent.", async () => {
+    document.getElementById('delete-account').onclick = async () => {
+        if (confirm("Are you sure you want to completely delete your account? This action is permanent and will remove all your data.")) {
             toggleSpinner(true);
             try {
                 const token = await auth.currentUser.getIdToken(true);
@@ -620,7 +598,7 @@ function renderSettings() {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
+                
                 await auth.currentUser.delete();
                 showToast("Account successfully deleted.", "info");
             } catch (e) {
@@ -632,7 +610,7 @@ function renderSettings() {
             } finally {
                 toggleSpinner(false);
             }
-        });
+        }
     };
 
     toggleSpinner(false);
@@ -698,15 +676,15 @@ async function handleFeedbackSubmit(e) {
         const token = await auth.currentUser.getIdToken(true);
         const response = await fetch(`${API_BASE_URL}/api/feedback`, {
             method: 'POST',
-            headers: {
+            headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ text })
         });
-
+        
         if (!response.ok) throw new Error('Failed to send feedback');
-
+        
         showToast("Thank you for your professional feedback!", "success");
         setTimeout(() => navigate('dashboard'), 1500);
     } catch (e) {
@@ -754,7 +732,7 @@ async function loadNotes() {
                 btn.onclick = async (e) => {
                     e.stopPropagation();
                     const noteId = e.target.closest('button').dataset.id;
-                    openConfirmModal("Delete this note permanently?", async () => {
+                    if (confirm("Delete this record permanently from Aiven?")) {
                         toggleSpinner(true);
                         try {
                             const token = await auth.currentUser.getIdToken(true);
@@ -770,7 +748,7 @@ async function loadNotes() {
                         } finally {
                             toggleSpinner(false);
                         }
-                    });
+                    }
                 };
             });
         }
@@ -894,7 +872,7 @@ function openNoteModal(note = null) {
 
 function startTutorial() {
     const steps = [
-        { title: "Welcome to Talaga", content: "Your personal space for capturing ideas, managing to-dos, and securing accounts.", icon: "star" },
+        { title: "Welcome to Talaga", content: "Your premium space for capturing ideas, managing to-dos, and securing accounts.", icon: "star" },
         { title: "Create Instantly", content: "Use the 'New Note' button or press Alt + N anywhere in the app to capture a thought.", icon: "plus-circle" },
         { title: "Organize with Styles", content: "Categorize your notes as Information, Tasks, or Accounts for better mental clarity.", icon: "tags" },
         { title: "Secure & Sync", content: "Your data is secured by Firebase and synced across all your devices in real-time.", icon: "cloud-upload-alt" }
@@ -939,53 +917,6 @@ function startTutorial() {
 
     modalContainer.classList.remove('hidden');
     updateModal();
-}
-
-// --- Modal Helpers (replaces native confirm/prompt) ---
-
-function openConfirmModal(message, onConfirm) {
-    if (!modalContainer) return;
-    const prev = modalContainer.innerHTML;
-    const wasHidden = modalContainer.classList.contains('hidden');
-    modalContainer.classList.remove('hidden', 'fullscreen-overlay');
-    modalContainer.innerHTML = `
-        <div class="auth-container" style="max-width: 420px; text-align: center; animation: slideUp 0.3s ease">
-            <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1.5rem"></i>
-            <h3 style="margin-bottom: 1rem">Are you sure?</h3>
-            <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6">${message}</p>
-            <div style="display: flex; gap: 1rem">
-                <button id="confirm-cancel" class="nav-item-btn" style="flex:1; border: 1px solid var(--glass-border); justify-content: center">Cancel</button>
-                <button id="confirm-ok" class="btn-primary" style="flex:1; background: var(--accent); justify-content: center">Confirm</button>
-            </div>
-        </div>`;
-    const close = () => { modalContainer.innerHTML = prev; if (wasHidden) modalContainer.classList.add('hidden'); };
-    document.getElementById('confirm-cancel').onclick = close;
-    document.getElementById('confirm-ok').onclick = () => { close(); onConfirm(); };
-}
-
-function openInputModal({ title, label, placeholder, defaultValue, onConfirm }) {
-    if (!modalContainer) return;
-    const prev = modalContainer.innerHTML;
-    const wasHidden = modalContainer.classList.contains('hidden');
-    modalContainer.classList.remove('hidden', 'fullscreen-overlay');
-    modalContainer.innerHTML = `
-        <div class="auth-container" style="max-width: 420px; animation: slideUp 0.3s ease">
-            <h3 style="margin-bottom: 1.5rem">${title}</h3>
-            <label style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block">${label}</label>
-            <input id="input-modal-field" type="text" placeholder="${placeholder}" value="${defaultValue}" style="margin-bottom: 1.5rem">
-            <div style="display: flex; gap: 1rem">
-                <button id="input-cancel" class="nav-item-btn" style="flex:1; border: 1px solid var(--glass-border); justify-content: center">Cancel</button>
-                <button id="input-ok" class="btn-primary" style="flex:1; justify-content: center">Save</button>
-            </div>
-        </div>`;
-    const close = () => { modalContainer.innerHTML = prev; if (wasHidden) modalContainer.classList.add('hidden'); };
-    document.getElementById('input-cancel').onclick = close;
-    document.getElementById('input-ok').onclick = () => {
-        const val = document.getElementById('input-modal-field').value;
-        close();
-        onConfirm(val);
-    };
-    setTimeout(() => document.getElementById('input-modal-field')?.focus(), 50);
 }
 
 // Start the app when window loads
