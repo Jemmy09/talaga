@@ -50,17 +50,6 @@ const pool = new Pool({
 })();
 
 const app = express();
-// --- Wipe All Data ---
-app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
-    try {
-        await pool.query('DELETE FROM notes WHERE user_id = $1', [req.user.uid]);
-        res.json({ message: 'All notes wiped successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to wipe notes' });
-    }
-});
-
 const port = process.env.PORT || 3010; // Standard professional port
 
 // --- Pre-flight Checks (Professional Security) ---
@@ -110,6 +99,17 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // --- API Endpoints ---
+
+// 0. Wipe All Data (Elite Account Management)
+app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM notes WHERE user_id = $1', [req.user.uid]);
+        res.json({ message: 'All notes wiped successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to wipe notes' });
+    }
+});
 
 // 1. Get all notes for the authenticated user
 app.get('/api/notes', authenticateUser, async (req, res) => {
