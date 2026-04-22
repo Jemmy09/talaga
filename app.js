@@ -201,7 +201,7 @@ function renderLogin() {
             <div class="auth-container">
                 <div style="text-align: center; margin-bottom: 2.5rem">
                     <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))">
-                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Welcome Back</h1>
+                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Login</h1>
                     <p style="color: var(--text-muted)">Your personal space for clear thinking.</p>
                 </div>
                 
@@ -239,7 +239,7 @@ function renderRegister() {
             <div class="auth-container">
                 <div style="text-align: center; margin-bottom: 2.5rem">
                     <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))">
-                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Join Talaga</h1>
+                    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Register</h1>
                     <p style="color: var(--text-muted)">Start your journey towards professional organization.</p>
                 </div>
                 
