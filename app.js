@@ -116,26 +116,42 @@ function initApp() {
 }
 
 async function showView(viewName) {
-    if (!viewContainer) return;
+    if (!viewContainer || !mainNav) return;
+    
+    // Auth Guard
     if (!currentUser && viewName !== 'login' && viewName !== 'register') {
         navigate('login'); return;
     }
     if (currentUser && (viewName === 'login' || viewName === 'register')) {
         navigate('dashboard'); return;
     }
+
     currentView = viewName;
+
+    // Sidebar Visibility Control
+    if (viewName === 'login' || viewName === 'register') {
+        mainNav.classList.add('hidden');
+        document.getElementById('app-root').style.flexDirection = 'column';
+    } else {
+        mainNav.classList.remove('hidden');
+        document.getElementById('app-root').style.flexDirection = (window.innerWidth > 768) ? 'row' : 'column';
+    }
+
+    // Active Tab Styling
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.classList.toggle('active', li.dataset.view === viewName);
     });
+
+    // View Routing
     try {
         switch (viewName) {
-            case 'login': renderLogin(); break;
             case 'dashboard': renderDashboard(); break;
             case 'profile': renderProfile(); break;
             case 'settings': renderSettings(); break;
             case 'about': renderAbout(); break;
             case 'feedback': renderFeedback(); break;
             case 'help': renderHelp(); break;
+            case 'login': renderLogin(); break;
             default: renderDashboard();
         }
         document.title = `Talaga | ${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`;
