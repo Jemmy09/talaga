@@ -87,6 +87,14 @@ function initApp() {
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.onclick = () => navigate(li.dataset.view);
     });
+
+    // Alt + N shortcut
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key.toLowerCase() === 'n') {
+            e.preventDefault();
+            if (currentUser && currentView === 'dashboard') openNoteModal();
+        }
+    });
 }
 
 const navigate = (view) => {
@@ -307,17 +315,17 @@ function renderAbout() {
                         <img src="images/logo.png" style="width: 90px;">
                     </div>
                     <h1 style="font-size: 2.8rem; letter-spacing: -1px">Truly Your Space.</h1>
-                    <p style="color: var(--text-primary); font-weight: 500; font-size: 1.2rem; margin-top: 0.5rem">Talaga: Because your thoughts deserve a sanctuary. 🧘‍♂️</p>
+                    <p style="color: var(--text-primary); font-weight: 500; font-size: 1.2rem; margin-top: 0.5rem">A humble space for your notes.</p>
                 </div>
                 
                 <section style="margin-bottom: 3.5rem; line-height: 1.9">
                     <h3 style="color: var(--primary); margin-bottom: 1.2rem; font-size: 1.3rem">The Story Behind the Screen 💻</h3>
-                    <p style="color: var(--text-muted)">Talaga wasn't built by a robot in a cold factory. It was crafted with love (and probably way too much coffee ☕) to solve a simple problem: digital chaos. We believe that when your digital space is clean, your mind follows. Whether you're a student pulling an all-nighter or a business pro closing deals, Talaga is here to hold your hand (metaphorically, of course). 😉</p>
+                    <p style="color: var(--text-muted)">This website is simply a personal project built for taking notes. Nothing more, nothing less. It's a humble space designed to keep thoughts organized without the extra noise. I hope it helps you stay productive!</p>
                 </section>
 
                 <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 30px; border: 1px solid var(--glass-border); display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; backdrop-filter: blur(20px)">
                     <div>
-                        <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem"><i class="fas fa-user-ninja" style="margin-right: 0.75rem; color: var(--primary)"></i> Mastermind</h4>
+                        <h4 style="margin-bottom: 1rem; color: var(--text-main); font-size: 1.1rem"><i class="fas fa-code" style="margin-right: 0.75rem; color: var(--primary)"></i> Developer</h4>
                         <p style="color: var(--text-muted); font-size: 1.05rem">Jemmy Francisco</p>
                         <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.4rem">Chief Dreamer & Code Architect</p>
                     </div>
@@ -366,7 +374,14 @@ function renderFeedback() {
             </div>
         `;
 
-    document.getElementById('feedback-form').onsubmit = handleFeedbackSubmit;
+    document.getElementById('feedback-form').onsubmit = (e) => {
+        e.preventDefault();
+        const text = document.getElementById('feedback-text').value.trim();
+        if (!text) return;
+        window.location.href = `mailto:jemmyfrancisco30@gmail.com?subject=Talaga Feedback&body=${encodeURIComponent(text)}`;
+        showToast("Opening your email client...", "success");
+        setTimeout(() => navigate('dashboard'), 1500);
+    };
     toggleSpinner(false);
 }
 
@@ -384,9 +399,15 @@ function renderProfile() {
             <div class="auth-container" style="max-width: 600px; animation: slideUp 0.6s ease">
                 <div style="text-align: center; margin-bottom: 3rem">
                     <div style="position: relative; display: inline-block">
-                        <img src="${currentUser?.photoURL || 'https://via.placeholder.com/150'}" style="width: 120px; height: 120px; border-radius: 40px; border: 4px solid var(--primary); object-fit: cover; box-shadow: var(--glow)">
+                        <img id="profile-img" src="${currentUser?.photoURL || 'https://via.placeholder.com/150'}" style="width: 120px; height: 120px; border-radius: 40px; border: 4px solid var(--primary); object-fit: cover; box-shadow: var(--glow); cursor: pointer">
+                        <div style="position: absolute; bottom: -10px; right: -10px; background: var(--primary); padding: 8px; border-radius: 50%; cursor: pointer" id="edit-pic-btn">
+                            <i class="fas fa-camera"></i>
+                        </div>
                     </div>
-                    <h1 style="margin-top: 1.5rem; font-size: 1.8rem">${currentUser?.displayName || 'Anonymous User'}</h1>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 1.5rem;">
+                        <h1 id="profile-name" style="font-size: 1.8rem; margin: 0;">${currentUser?.displayName || 'Anonymous User'}</h1>
+                        <button id="edit-name-btn" style="background: transparent; border: none; color: var(--text-dim); cursor: pointer;"><i class="fas fa-edit"></i></button>
+                    </div>
                     <p style="color: var(--text-muted)">${currentUser?.email || ''}</p>
                 </div>
 
@@ -418,6 +439,38 @@ function renderProfile() {
             </div>
         `;
     toggleSpinner(false);
+
+    document.getElementById('edit-name-btn').onclick = async () => {
+        const newName = prompt("Enter new display name:", currentUser?.displayName || '');
+        if (newName && newName.trim() !== '') {
+            toggleSpinner(true);
+            try {
+                await currentUser.updateProfile({ displayName: newName.trim() });
+                document.getElementById('profile-name').innerText = newName.trim();
+                showToast("Profile name updated!", "success");
+                navigate('dashboard');
+                setTimeout(()=>navigate('profile'), 100);
+            } catch (e) {
+                showToast(e.message, "error");
+            }
+            toggleSpinner(false);
+        }
+    };
+
+    document.getElementById('edit-pic-btn').onclick = async () => {
+        const newPic = prompt("Enter new profile picture URL:", currentUser?.photoURL || '');
+        if (newPic && newPic.trim() !== '') {
+            toggleSpinner(true);
+            try {
+                await currentUser.updateProfile({ photoURL: newPic.trim() });
+                document.getElementById('profile-img').src = newPic.trim();
+                showToast("Profile picture updated!", "success");
+            } catch (e) {
+                showToast(e.message, "error");
+            }
+            toggleSpinner(false);
+        }
+    };
 }
 
 function renderSettings() {
@@ -453,16 +506,67 @@ function renderSettings() {
                     <button id="export-data" class="nav-item-btn" style="border: 1px solid var(--glass-border); width: auto">
                         <i class="fas fa-download"></i> Export Markdown
                     </button>
-                    <button id="clear-data" class="nav-item-btn" style="color: var(--accent); border: 1px solid rgba(244, 63, 94, 0.2); width: auto">
+                    <button id="clear-data" class="nav-item-btn" style="color: var(--accent); border: 1px solid rgba(244, 63, 94, 0.2); width: auto; margin-right: 1rem;">
                         <i class="fas fa-trash"></i> Wipe All Data
+                    </button>
+                    <button id="delete-account" class="nav-item-btn" style="color: var(--accent); border: 1px solid rgba(244, 63, 94, 0.2); width: auto;">
+                        <i class="fas fa-user-times"></i> Delete Account
                     </button>
                 </div>
             </div>
+            <div style="margin-top: 2rem; text-align: center;">
+                <button id="save-settings" class="btn-primary" style="width: 100%; justify-content: center; padding: 1rem; border-radius: 16px;">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
         `;
+
+    const isUltraDark = document.body.classList.contains('ultra-dark');
+    const isReducedMotion = document.body.classList.contains('reduced-motion');
+    
+    if (isUltraDark) document.getElementById('theme-toggle').classList.add('active');
+    if (isReducedMotion) document.getElementById('motion-toggle').classList.add('active');
 
     document.getElementById('theme-toggle').onclick = (e) => e.target.classList.toggle('active');
     document.getElementById('motion-toggle').onclick = (e) => e.target.classList.toggle('active');
-    document.getElementById('export-data').onclick = () => showToast("Exporting your data...", "info");
+
+    document.getElementById('save-settings').onclick = () => {
+        const darkActive = document.getElementById('theme-toggle').classList.contains('active');
+        const motionActive = document.getElementById('motion-toggle').classList.contains('active');
+        
+        if (darkActive) document.body.classList.add('ultra-dark');
+        else document.body.classList.remove('ultra-dark');
+        
+        if (motionActive) document.body.classList.add('reduced-motion');
+        else document.body.classList.remove('reduced-motion');
+        
+        showToast("Settings saved successfully!", "success");
+    };
+
+    document.getElementById('export-data').onclick = () => {
+        if (!notes || notes.length === 0) {
+            showToast("No notes to export", "info");
+            return;
+        }
+        let mdContent = "# My Talaga Notes\n\n";
+        notes.forEach(note => {
+            mdContent += `## ${note.title}\n**Category:** ${note.category}\n`;
+            if (note.description) mdContent += `**Description:** ${note.description}\n`;
+            if (note.content) mdContent += `\n${note.content}\n`;
+            mdContent += "\n---\n\n";
+        });
+        const blob = new Blob([mdContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Talaga_Notes.md';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Notes exported to Markdown!", "success");
+    };
+
     document.getElementById('clear-data').onclick = async () => {
         if (confirm("Are you sure? This will delete ALL your notes permanently from Aiven.")) {
             toggleSpinner(true);
@@ -479,6 +583,30 @@ function renderSettings() {
                 navigate('dashboard');
             } catch (e) {
                 showToast("Error: " + e.message, "error");
+            } finally {
+                toggleSpinner(false);
+            }
+        }
+    };
+
+    document.getElementById('delete-account').onclick = async () => {
+        if (confirm("Are you sure you want to completely delete your account? This action is permanent and will remove all your data.")) {
+            toggleSpinner(true);
+            try {
+                const token = await auth.currentUser.getIdToken(true);
+                await fetch(`${API_BASE_URL}/api/notes`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                await auth.currentUser.delete();
+                showToast("Account successfully deleted.", "info");
+            } catch (e) {
+                if (e.code === 'auth/requires-recent-login') {
+                    showToast("Please log out and log back in to verify your identity before deleting your account.", "error");
+                } else {
+                    showToast("Error: " + e.message, "error");
+                }
             } finally {
                 toggleSpinner(false);
             }
@@ -637,11 +765,12 @@ function openNoteModal(note = null) {
     modalContainer.classList.remove('hidden');
     const isEdit = !!note;
 
+    modalContainer.classList.add('fullscreen-overlay');
     modalContainer.innerHTML = `
-            <div class="auth-container" style="max-width: 600px; margin: 2rem auto; text-align: left;">
+            <div class="auth-container fullscreen-modal" style="margin: 0; max-width: 100%; height: 100vh; border-radius: 0; text-align: left; display: flex; flex-direction: column;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
                     <h2 style="font-size: 1.8rem">${isEdit ? 'Refine Note' : 'Capture Idea'}</h2>
-                    <button onclick="document.getElementById('modal-container').classList.add('hidden')" style="background:transparent; border:none; color:white; font-size: 1.5rem; cursor:pointer">
+                    <button onclick="document.getElementById('modal-container').classList.add('hidden'); document.getElementById('modal-container').classList.remove('fullscreen-overlay');" style="background:transparent; border:none; color:white; font-size: 1.5rem; cursor:pointer">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -669,9 +798,9 @@ function openNoteModal(note = null) {
                     <input type="text" id="note-description" placeholder="E.g., Final Exam Prep, Client Meeting..." value="${note?.description || ''}">
                 </div>
 
-                <div style="margin-bottom: 1.5rem">
+                <div style="margin-bottom: 1.5rem; flex: 1; display: flex; flex-direction: column;">
                     <label style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block">Main Content (Optional)</label>
-                    <textarea id="note-content" placeholder="Jot down your thoughts here..." style="height: 150px">${note?.content || ''}</textarea>
+                    <textarea id="note-content" placeholder="Jot down your thoughts here..." style="flex: 1; min-height: 200px; resize: none;">${note?.content || ''}</textarea>
                 </div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem">
@@ -685,7 +814,7 @@ function openNoteModal(note = null) {
             </div>
         `;
 
-    document.getElementById('close-modal').onclick = () => modalContainer.classList.add('hidden');
+    document.getElementById('close-modal').onclick = () => { modalContainer.classList.add('hidden'); modalContainer.classList.remove('fullscreen-overlay'); };
     document.getElementById('save-note').onclick = async (e) => {
         const btn = e.target.closest('button');
         const title = document.getElementById('note-title').value.trim();
@@ -731,6 +860,7 @@ function openNoteModal(note = null) {
 
             showToast(isEdit ? "Note updated in Aiven" : "Note saved to Aiven", "success");
             modalContainer.classList.add('hidden');
+            modalContainer.classList.remove('fullscreen-overlay');
             loadNotes();
         } catch (e) {
             showToast("Sync Error: " + e.message, "error");
@@ -751,6 +881,7 @@ function startTutorial() {
     let currentStep = 0;
     const updateModal = () => {
         const step = steps[currentStep];
+        modalContainer.classList.remove('fullscreen-overlay');
         modalContainer.innerHTML = `
                 <div class="auth-container" style="max-width: 500px; text-align: center; animation: slideUp 0.4s ease">
                     <i class="fas fa-${step.icon}" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 2rem"></i>
