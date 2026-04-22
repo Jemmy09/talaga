@@ -79,11 +79,16 @@ body.ultra-dark {
     display: none;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    background: var(--glass-bg);
+    padding: 0.85rem 1.5rem;
+    background: rgba(11, 15, 26, 0.8);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--glass-border);
-    width: 100%;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
 }
 
 .menu-toggle {
@@ -704,9 +709,15 @@ select option {
         top: 0;
         bottom: 0;
         width: 280px;
-        transition: var(--transition-slow);
+        z-index: 2000;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #0b0f1a;
+        display: flex !important;
     }
-    #main-nav.open { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.5); }
+    #main-nav.open { 
+        transform: translateX(280px); 
+        box-shadow: 20px 0 80px rgba(0,0,0,0.8);
+    }
     .brand-name, .nav-links li span, .nav-item-btn span { display: block; }
     #main-content { padding: 1.5rem; }
     
