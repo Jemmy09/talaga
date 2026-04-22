@@ -194,8 +194,15 @@ const showView = (viewName) => {
             default: renderDashboard();
         }
         document.title = `Talaga | ${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`;
+        
+        // Failsafe: If the renderer didn't clear the spinner, clear it now
+        // This prevents the "Infinite Blank Screen" if a specific view fails to clear it.
+        if (viewName !== 'dashboard') {
+            setTimeout(() => toggleSpinner(false), 500);
+        }
     } catch (error) {
         console.error("Render Error:", error);
+        viewContainer.innerHTML = `<div style="padding: 4rem; text-align: center;"><h2>Something went wrong</h2><p>${error.message}</p><button onclick="location.reload()" class="btn-primary">Reload App</button></div>`;
         toggleSpinner(false);
     }
 };
