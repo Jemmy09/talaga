@@ -62,10 +62,15 @@ function initApp() {
         console.log("Auth State Changed:", user ? "LoggedIn" : "LoggedOut");
         if (user) {
             currentUser = user;
-            // Navigate FIRST so login feels instant and responsive
-            const currentHash = window.location.hash.replace('#', '') || 'dashboard';
-            navigate(currentHash);
-            // Then fetch notes in the background (non-blocking)
+            const currentHash = window.location.hash.replace('#', '');
+            
+            // If logged in but on login/register page, force move to dashboard
+            if (!currentHash || currentHash === 'login' || currentHash === 'register') {
+                navigate('dashboard');
+            } else {
+                showView(currentHash); // Force immediate render
+            }
+            
             fetchAllNotes().catch(e => console.warn("Background note sync:", e.message));
         } else {
             currentUser = null;
@@ -151,6 +156,12 @@ const showView = (viewName) => {
     // Auth Guard
     if (!currentUser && viewName !== 'login' && viewName !== 'register') {
         navigate('login');
+        return;
+    }
+    
+    // Reverse Guard: If logged in, don't show login/register
+    if (currentUser && (viewName === 'login' || viewName === 'register')) {
+        navigate('dashboard');
         return;
     }
 
