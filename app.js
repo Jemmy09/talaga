@@ -7,7 +7,7 @@ window.onerror = function (msg, url, line, col, error) {
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "AIzaSyD3H3gQOsE9sAF6DUW69vytH6-v3fQvhzQ",
+    apiKey: "AIzaSyABJZRDkwNTs0Ujs2wpnSSmNMlY4uinKNo",
     authDomain: "francisco-61572.firebaseapp.com",
     databaseURL: "https://francisco-61572.firebaseio.com",
     projectId: "francisco-61572",
