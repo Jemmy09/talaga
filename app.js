@@ -202,7 +202,7 @@ function renderLogin() {
                 <div style="text-align: center; margin-bottom: 2.5rem">
                     <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4))">
                     <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Welcome Back</h1>
-                    <p style="color: var(--text-muted)">Your premium space for clear thinking.</p>
+                    <p style="color: var(--text-muted)">Your personal space for clear thinking.</p>
                 </div>
                 
                 <button id="google-signin" class="google-btn">
@@ -872,7 +872,7 @@ function openNoteModal(note = null) {
 
 function startTutorial() {
     const steps = [
-        { title: "Welcome to Talaga", content: "Your premium space for capturing ideas, managing to-dos, and securing accounts.", icon: "star" },
+        { title: "Welcome to Talaga", content: "Your personal space for capturing ideas, managing to-dos, and securing accounts.", icon: "star" },
         { title: "Create Instantly", content: "Use the 'New Note' button or press Alt + N anywhere in the app to capture a thought.", icon: "plus-circle" },
         { title: "Organize with Styles", content: "Categorize your notes as Information, Tasks, or Accounts for better mental clarity.", icon: "tags" },
         { title: "Secure & Sync", content: "Your data is secured by Firebase and synced across all your devices in real-time.", icon: "cloud-upload-alt" }
