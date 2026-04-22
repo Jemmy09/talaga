@@ -66,9 +66,10 @@ function initApp() {
 
             // If logged in but on login/register page, force move to dashboard
             if (!currentHash || currentHash === 'login' || currentHash === 'register') {
-                navigate('dashboard');
+                window.location.hash = 'dashboard';
+                showView('dashboard'); // Force immediate render
             } else {
-                showView(currentHash); // Force immediate render
+                showView(currentHash);
             }
 
             fetchAllNotes().catch(e => console.warn("Background note sync:", e.message));
@@ -326,6 +327,8 @@ async function renderDashboard() {
     const gsBtn = document.getElementById('get-started-btn');
     if (gsBtn) gsBtn.onclick = () => openNoteModal();
 
+    // CLEAR SPINNER HERE so user sees the UI while data loads
+    toggleSpinner(false);
     loadNotes();
 }
 
