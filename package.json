@@ -1,0 +1,12 @@
+{
+  "name": "talaga-ecosystem",
+  "version": "3.4.0",
+  "description": "Premium full-stack note-taking sanctuary",
+  "scripts": {
+    "sync": "powershell -ExecutionPolicy Bypass -File sync.ps1",
+    "backend-dev": "cd backend && npm run dev",
+    "backend-start": "cd backend && npm start"
+  },
+  "author": "Jemmy Francisco",
+  "license": "MIT"
+}
