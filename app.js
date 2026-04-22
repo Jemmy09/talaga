@@ -387,33 +387,71 @@ async function loadNotes() {
 
 function openNoteModal(noteId = null) {
     const modal = document.getElementById('note-modal');
-    const titleInput = document.getElementById('note-title-input');
-    const contentInput = document.getElementById('note-content-input');
-    const saveBtn = document.getElementById('save-note-btn');
-    const deleteBtn = document.getElementById('delete-modal-btn');
+    const viewContainer = modal.querySelector('.modal-content');
     const note = noteId ? notes.find(n => n.id === noteId) : null;
-    titleInput.value = note ? note.title : '';
-    contentInput.value = note ? note.content : '';
-    if (noteId) deleteBtn.classList.remove('hidden');
-    else deleteBtn.classList.add('hidden');
+    
+    const renderReadView = () => {
+        viewContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem">
+                <div>
+                    <h1 style="font-size: 2rem; margin-bottom: 0.5rem">${note ? note.title : 'New Note'}</h1>
+                    <p style="color: var(--text-dim); font-size: 0.9rem">${new Date(note ? note.updated_at : Date.now()).toLocaleString()}</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem">
+                    <button id="edit-mode-btn" class="delete-btn" style="color: var(--primary)"><i class="fas fa-edit"></i></button>
+                    <button id="delete-modal-btn" class="delete-btn"><i class="fas fa-trash"></i></button>
+                    <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div style="font-size: 1.15rem; line-height: 1.8; color: var(--text-main); white-space: pre-wrap; min-height: 200px">
+                ${note ? note.content : 'No content.'}
+            </div>
+        `;
+        document.getElementById('edit-mode-btn').onclick = () => renderEditView();
+        document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
+    };
+
+    const renderEditView = () => {
+        viewContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem">
+                <h2 style="font-size: 1.2rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px">Editor Mode</h2>
+                <div style="display: flex; gap: 0.5rem">
+                    <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <input id="note-title-input" class="modal-input" placeholder="Note Title" value="${note ? note.title : ''}" style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem">
+            <textarea id="note-content-input" class="modal-input" placeholder="Begin your thoughts..." style="font-size: 1.1rem; min-height: 350px; line-height: 1.8; resize: none">${note ? note.content : ''}</textarea>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem">
+                <button id="save-note-btn" class="btn-primary" style="flex: 1">Save Changes</button>
+                ${noteId ? `<button id="cancel-edit-btn" class="nav-item-btn" style="border: 1px solid var(--glass-border)">Cancel</button>` : ''}
+            </div>
+        `;
+        
+        if (noteId) document.getElementById('cancel-edit-btn').onclick = () => renderReadView();
+        
+        document.getElementById('save-note-btn').onclick = async () => {
+            const title = document.getElementById('note-title-input').value.trim();
+            const content = document.getElementById('note-content-input').value.trim();
+            if (!title && !content) return;
+            toggleSpinner(true, 'SAVING');
+            const token = await currentUser.getIdToken();
+            const method = noteId ? 'PUT' : 'POST';
+            const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ title, content })
+            });
+            if (res.ok) { closeModal(); loadNotes(); showToast("Synchronized", "success"); }
+            toggleSpinner(false);
+        };
+    };
+
+    if (noteId) renderReadView();
+    else renderEditView();
+
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    saveBtn.onclick = async () => {
-        const title = titleInput.value.trim();
-        const content = contentInput.value.trim();
-        if (!title && !content) return;
-        toggleSpinner(true, 'SAVING');
-        const token = await currentUser.getIdToken();
-        const method = noteId ? 'PUT' : 'POST';
-        const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
-        const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title, content })
-        });
-        if (res.ok) { closeModal(); loadNotes(); showToast("Synchronized", "success"); }
-        toggleSpinner(false);
-    };
 }
 
 function closeModal() {
@@ -427,7 +465,11 @@ async function deleteNote(id) {
     try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) { showToast("Deleted", "success"); loadNotes(); }
+        if (res.ok) { 
+            showToast("Deleted", "success"); 
+            closeModal();
+            loadNotes(); 
+        }
     } catch(e) {}
     toggleSpinner(false);
 }
