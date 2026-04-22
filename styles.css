@@ -59,11 +59,13 @@ body {
 .hidden { display: none !important; }
 .flex { display: flex !important; }
 
-/* Ultra Dark Theme */
+/* Elite Ultra-Dark Theme (Obsidian) */
 body.ultra-dark {
-    --bg-dark: #05070a;
-    --bg-surface: #080b14;
-    --glass-bg: rgba(255, 255, 255, 0.01);
+    --bg-dark: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-card: rgba(0, 0, 0, 0.9);
+    --glass-bg: rgba(20, 20, 20, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.05);
     --primary: #4f46e5;
 }
 
@@ -713,14 +715,6 @@ select option {
     header button { flex: 1; justify-content: center; }
 }
 
-/* User Settings Themes */
-body.ultra-dark {
-    --bg-dark: #000000;
-    --bg-surface: #0a0a0a;
-    --bg-card: rgba(0, 0, 0, 0.9);
-    --glass-bg: rgba(20, 20, 20, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.05);
-}
 
 body.reduced-motion *, 
 body.reduced-motion *::before, 
