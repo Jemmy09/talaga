@@ -1,7 +1,7 @@
-// Talaga Premium Notes - Bulletproof Core
+// Talaga Premium Notes - Shield Core v3.1
 // ------------------------------------------
 
-// --- Helper Functions (Hoisted) ---
+// --- Helper Functions ---
 function toggleSpinner(show, text = 'LOADING SPACE') {
     const spinner = document.getElementById('loading-spinner');
     const textEl = document.getElementById('spinner-text');
@@ -12,7 +12,9 @@ function toggleSpinner(show, text = 'LOADING SPACE') {
 }
 
 function navigate(view) {
-    window.location.hash = view;
+    if (window.location.hash.replace('#', '') !== view) {
+        window.location.hash = view;
+    }
 }
 
 function showToast(message, type = 'info') {
@@ -40,58 +42,49 @@ const firebaseConfig = {
     appId: "1:333100224160:web:4887376c6c59b66c433a75"
 };
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000'
-    : 'https://talaga-backend.onrender.com';
+const API_BASE_URL = 'https://talaga-backend.onrender.com';
 
 // --- State ---
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 let currentUser = null;
-let currentView = 'login';
+let currentView = null;
 let notes = [];
 let viewContainer, mainNav;
+let authInitialized = false;
 
 // --- App Lifecycle ---
 function initApp() {
-    console.log("🚀 Talaga Initializing...");
+    console.log("🛡️ Shield Core Initializing...");
     viewContainer = document.getElementById('view-container');
     mainNav = document.getElementById('main-nav');
 
-    if (!viewContainer) {
-        console.error("Critical Error: UI container missing.");
-        return;
-    }
+    // SHOW SPINNER BY DEFAULT
+    toggleSpinner(true, 'SECURING SPACE');
 
-    // 1. Handle Google Redirect Result immediately
-    auth.getRedirectResult()
-        .then((result) => {
-            if (result.user) console.log("✅ Successful Redirect Login");
-        })
-        .catch((error) => {
-            console.error("❌ Auth Redirect Error:", error);
-            showToast(`Login failed: ${error.message}`, 'error');
-            toggleSpinner(false);
-        });
+    // 1. Handle Google Redirect Result
+    auth.getRedirectResult().catch((error) => {
+        console.error("Auth Error:", error);
+        showToast(error.message, 'error');
+    });
 
     // 2. Monitor Auth State
     auth.onAuthStateChanged(async (user) => {
-        console.log("Auth State:", user ? "LoggedIn" : "LoggedOut");
+        console.log("Auth Event:", user ? "USER_FOUND" : "NO_USER");
+        authInitialized = true;
+        currentUser = user;
+
         if (user) {
-            currentUser = user;
             const currentHash = window.location.hash.replace('#', '');
-            
             if (!currentHash || currentHash === 'login' || currentHash === 'register') {
-                toggleSpinner(true, 'SYNCING WORKSPACE');
                 navigate('dashboard');
-                showView('dashboard'); // Force immediate
+                showView('dashboard');
             } else {
                 showView(currentHash);
             }
-            fetchAllNotes().catch(e => console.warn("Note sync:", e.message));
+            fetchAllNotes();
         } else {
-            currentUser = null;
             notes = [];
             navigate('login');
             showView('login');
@@ -100,6 +93,7 @@ function initApp() {
 
     // 3. Router
     window.onhashchange = () => {
+        if (!authInitialized) return; // Wait for auth
         const view = window.location.hash.replace('#', '') || (currentUser ? 'dashboard' : 'login');
         showView(view);
     };
@@ -110,7 +104,10 @@ function initApp() {
     });
 
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.onclick = () => auth.signOut();
+    if (logoutBtn) logoutBtn.onclick = () => {
+        toggleSpinner(true, 'SIGNING OUT');
+        auth.signOut();
+    };
 
     const menuToggle = document.getElementById('menu-toggle');
     if (menuToggle) menuToggle.onclick = () => mainNav.classList.toggle('open');
@@ -118,21 +115,23 @@ function initApp() {
 
 async function showView(viewName) {
     if (!viewContainer) return;
+    if (currentView === viewName) return;
 
-    // Protection
-    if (!currentUser && viewName !== 'login' && viewName !== 'register') {
-        navigate('login');
-        return;
-    }
-    if (currentUser && (viewName === 'login' || viewName === 'register')) {
-        navigate('dashboard');
-        return;
+    // Auth Protection
+    if (authInitialized) {
+        if (!currentUser && viewName !== 'login' && viewName !== 'register') {
+            navigate('login');
+            return;
+        }
+        if (currentUser && (viewName === 'login' || viewName === 'register')) {
+            navigate('dashboard');
+            return;
+        }
     }
 
-    console.log(`📂 Rendering View: ${viewName}`);
+    console.log(`📂 Switching to: ${viewName}`);
     currentView = viewName;
     
-    // Smooth Transition Effect
     viewContainer.classList.remove('view-enter');
     void viewContainer.offsetWidth; 
     viewContainer.classList.add('view-enter');
@@ -234,11 +233,13 @@ function renderDashboard() {
 
 async function fetchAllNotes() {
     if (!currentUser) return;
-    const token = await currentUser.getIdToken();
-    const res = await fetch(`${API_BASE_URL}/api/notes`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) notes = await res.json();
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) notes = await res.json();
+    } catch(e) { console.warn("Fetch failed:", e); }
 }
 
 async function loadNotes() {
@@ -246,8 +247,6 @@ async function loadNotes() {
     const empty = document.getElementById('empty-state');
     if (!list) return;
 
-    await fetchAllNotes();
-    
     if (notes.length === 0) {
         list.innerHTML = '';
         empty.classList.remove('hidden');
@@ -255,18 +254,22 @@ async function loadNotes() {
         empty.classList.add('hidden');
         list.innerHTML = notes.map(n => `
             <div class="note-card">
-                <h3>${n.title}</h3>
-                <p>${n.content.substring(0, 100)}...</p>
+                <h3>${n.title || 'Untitled'}</h3>
+                <p>${(n.content || '').substring(0, 100)}...</p>
             </div>
         `).join('');
     }
 }
 
-// --- Modals & Popups ---
 function openNoteModal() {
-    // Basic modal logic (can be expanded)
-    showToast("Opening editor...", "info");
+    showToast("Editor opening...", "info");
 }
+
+function renderProfile() { viewContainer.innerHTML = "<h1>Profile View</h1>"; toggleSpinner(false); }
+function renderSettings() { viewContainer.innerHTML = "<h1>Settings View</h1>"; toggleSpinner(false); }
+function renderAbout() { viewContainer.innerHTML = "<h1>About View</h1>"; toggleSpinner(false); }
+function renderFeedback() { viewContainer.innerHTML = "<h1>Feedback View</h1>"; toggleSpinner(false); }
+function renderHelp() { viewContainer.innerHTML = "<h1>Help View</h1>"; toggleSpinner(false); }
 
 // --- Entry Point ---
 document.addEventListener('DOMContentLoaded', initApp);
