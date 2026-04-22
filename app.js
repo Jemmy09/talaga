@@ -1,7 +1,6 @@
-// Talaga Premium Notes - Shield Core v3.1
+// Talaga Premium Notes - Reliability Core v3.2
 // ------------------------------------------
 
-// --- Helper Functions ---
 function toggleSpinner(show, text = 'LOADING SPACE') {
     const spinner = document.getElementById('loading-spinner');
     const textEl = document.getElementById('spinner-text');
@@ -29,10 +28,9 @@ function showToast(message, type = 'info') {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(20px)';
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 5000); // Increased time for better reading
 }
 
-// --- Configuration ---
 const firebaseConfig = {
     apiKey: "AIzaSyABJZRDkwNTs0Ujs2wpnSSmNMlY4uinKNo",
     authDomain: "francisco-61572.firebaseapp.com",
@@ -44,35 +42,28 @@ const firebaseConfig = {
 
 const API_BASE_URL = 'https://talaga-backend.onrender.com';
 
-// --- State ---
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+
 let currentUser = null;
 let currentView = null;
 let notes = [];
 let viewContainer, mainNav;
-let authInitialized = false;
 
-// --- App Lifecycle ---
 function initApp() {
-    console.log("🛡️ Shield Core Initializing...");
+    console.log("🚀 Reliability Core v3.2 Initializing...");
     viewContainer = document.getElementById('view-container');
     mainNav = document.getElementById('main-nav');
 
-    // SHOW SPINNER BY DEFAULT
     toggleSpinner(true, 'SECURING SPACE');
 
-    // 1. Handle Google Redirect Result
-    auth.getRedirectResult().catch((error) => {
-        console.error("Auth Error:", error);
-        showToast(error.message, 'error');
-    });
+    // Force persistence to LOCAL
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-    // 2. Monitor Auth State
     auth.onAuthStateChanged(async (user) => {
-        console.log("Auth Event:", user ? "USER_FOUND" : "NO_USER");
-        authInitialized = true;
+        console.log("Auth State Changed:", user ? "LOGGED_IN" : "LOGGED_OUT");
         currentUser = user;
 
         if (user) {
@@ -91,23 +82,17 @@ function initApp() {
         }
     });
 
-    // 3. Router
     window.onhashchange = () => {
-        if (!authInitialized) return; // Wait for auth
         const view = window.location.hash.replace('#', '') || (currentUser ? 'dashboard' : 'login');
         showView(view);
     };
 
-    // 4. Global Nav Listeners
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.onclick = () => navigate(li.dataset.view);
     });
 
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.onclick = () => {
-        toggleSpinner(true, 'SIGNING OUT');
-        auth.signOut();
-    };
+    if (logoutBtn) logoutBtn.onclick = () => auth.signOut();
 
     const menuToggle = document.getElementById('menu-toggle');
     if (menuToggle) menuToggle.onclick = () => mainNav.classList.toggle('open');
@@ -115,23 +100,18 @@ function initApp() {
 
 async function showView(viewName) {
     if (!viewContainer) return;
-    if (currentView === viewName) return;
+    if (currentView === viewName && viewName !== 'dashboard') return;
 
-    // Auth Protection
-    if (authInitialized) {
-        if (!currentUser && viewName !== 'login' && viewName !== 'register') {
-            navigate('login');
-            return;
-        }
-        if (currentUser && (viewName === 'login' || viewName === 'register')) {
-            navigate('dashboard');
-            return;
-        }
+    if (!currentUser && viewName !== 'login' && viewName !== 'register') {
+        navigate('login');
+        return;
+    }
+    if (currentUser && (viewName === 'login' || viewName === 'register')) {
+        navigate('dashboard');
+        return;
     }
 
-    console.log(`📂 Switching to: ${viewName}`);
     currentView = viewName;
-    
     viewContainer.classList.remove('view-enter');
     void viewContainer.offsetWidth; 
     viewContainer.classList.add('view-enter');
@@ -141,25 +121,15 @@ async function showView(viewName) {
             case 'login': renderLogin(); break;
             case 'register': renderRegister(); break;
             case 'dashboard': renderDashboard(); break;
-            case 'profile': renderProfile(); break;
-            case 'settings': renderSettings(); break;
-            case 'about': renderAbout(); break;
-            case 'feedback': renderFeedback(); break;
-            case 'help': renderHelp(); break;
             default: renderDashboard();
         }
         document.title = `Talaga | ${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`;
-        
-        if (viewName !== 'dashboard') {
-            setTimeout(() => toggleSpinner(false), 300);
-        }
+        if (viewName !== 'dashboard') toggleSpinner(false);
     } catch (error) {
         console.error("Render Error:", error);
         toggleSpinner(false);
     }
 }
-
-// --- View Renderers ---
 
 function renderLogin() {
     if (mainNav) mainNav.classList.add('hidden');
@@ -181,7 +151,10 @@ function renderLogin() {
     `;
     document.getElementById('google-signin').onclick = () => {
         toggleSpinner(true, 'AUTHENTICATING');
-        auth.signInWithRedirect(provider);
+        auth.signInWithPopup(provider).catch(e => {
+            toggleSpinner(false);
+            showToast(`Auth Error: ${e.message}`, 'error');
+        });
     };
     toggleSpinner(false);
 }
@@ -206,7 +179,10 @@ function renderRegister() {
     `;
     document.getElementById('google-signup').onclick = () => {
         toggleSpinner(true, 'AUTHENTICATING');
-        auth.signInWithRedirect(provider);
+        auth.signInWithPopup(provider).catch(e => {
+            toggleSpinner(false);
+            showToast(`Auth Error: ${e.message}`, 'error');
+        });
     };
     toggleSpinner(false);
 }
@@ -226,7 +202,7 @@ function renderDashboard() {
             <p>Your workspace is empty. Let's create something!</p>
         </div>
     `;
-    document.getElementById('add-note-btn').onclick = () => openNoteModal();
+    document.getElementById('add-note-btn').onclick = () => showToast("Editor coming soon!", "info");
     toggleSpinner(false);
     loadNotes();
 }
@@ -239,7 +215,7 @@ async function fetchAllNotes() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) notes = await res.json();
-    } catch(e) { console.warn("Fetch failed:", e); }
+    } catch(e) { console.error("Sync Error:", e); }
 }
 
 async function loadNotes() {
@@ -247,6 +223,8 @@ async function loadNotes() {
     const empty = document.getElementById('empty-state');
     if (!list) return;
 
+    await fetchAllNotes();
+    
     if (notes.length === 0) {
         list.innerHTML = '';
         empty.classList.remove('hidden');
@@ -261,15 +239,4 @@ async function loadNotes() {
     }
 }
 
-function openNoteModal() {
-    showToast("Editor opening...", "info");
-}
-
-function renderProfile() { viewContainer.innerHTML = "<h1>Profile View</h1>"; toggleSpinner(false); }
-function renderSettings() { viewContainer.innerHTML = "<h1>Settings View</h1>"; toggleSpinner(false); }
-function renderAbout() { viewContainer.innerHTML = "<h1>About View</h1>"; toggleSpinner(false); }
-function renderFeedback() { viewContainer.innerHTML = "<h1>Feedback View</h1>"; toggleSpinner(false); }
-function renderHelp() { viewContainer.innerHTML = "<h1>Help View</h1>"; toggleSpinner(false); }
-
-// --- Entry Point ---
 document.addEventListener('DOMContentLoaded', initApp);
