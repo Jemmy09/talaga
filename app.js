@@ -147,8 +147,22 @@ async function showView(viewName) {
 
 function renderLogin() {
     if (mainNav) mainNav.classList.add('hidden');
-    viewContainer.innerHTML = `<div class="auth-container"><h1>Welcome Back</h1><button id="google-signin" class="google-btn">Continue with Google</button></div>`;
-    document.getElementById('google-signin').onclick = () => auth.signInWithPopup(provider);
+    viewContainer.innerHTML = `
+        <div class="auth-container" style="animation: slideUp 0.6s ease-out">
+            <div style="text-align: center; margin-bottom: 2.5rem">
+                <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem">
+                <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Welcome Back</h1>
+                <p style="color: var(--text-muted)">Your premium space for clear thinking.</p>
+            </div>
+            <button id="google-signin" class="google-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="20" height="20">
+                <span>Continue with Google</span>
+            </button>
+        </div>`;
+    document.getElementById('google-signin').onclick = () => {
+        toggleSpinner(true, 'AUTHENTICATING');
+        auth.signInWithPopup(provider);
+    };
     toggleSpinner(false);
 }
 
