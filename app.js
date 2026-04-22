@@ -264,13 +264,33 @@ function renderAbout() {
 
 function renderFeedback() {
     viewContainer.innerHTML = `
-        <div class="feedback-container" style="animation: slideUp 0.6s ease-out; max-width: 500px; margin: 0 auto">
-            <h1>Sanctuary Feedback</h1>
-            <p style="color: var(--text-muted); margin-bottom: 2.5rem">Directly to Jemmy Francisco</p>
-            <textarea id="feedback-body" class="modal-input" placeholder="Your professional feedback..." style="min-height: 200px; background: var(--glass-bg); padding: 2rem; border-radius: 1.5rem; border: 1px solid var(--glass-border); margin-bottom: 2rem"></textarea>
-            <button class="btn-primary" style="width: 100%" onclick="sendFeedback()">Send to Jemmy</button>
-        </div>
-    `;
+        <div style="max-width: 600px; margin: 4rem auto; text-align: center; animation: slideUp 0.6s ease-out">
+            <h1 style="font-size: 2.5rem; margin-bottom: 1rem">Feedback</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem">Directly to Jemmy Francisco</p>
+            <div class="settings-group" style="text-align: left">
+                <textarea id="feedback-text" placeholder="Your professional feedback..." style="width: 100%; min-height: 150px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; color: white; padding: 1.25rem; font-family: inherit; resize: vertical"></textarea>
+            </div>
+            <button id="submit-feedback-btn" class="btn-primary" style="width: 100%; margin-top: 1.5rem">Send</button>
+        </div>`;
+    
+    document.getElementById('submit-feedback-btn').onclick = async () => {
+        const text = document.getElementById('feedback-text').value.trim();
+        if (!text) return;
+        toggleSpinner(true, 'SENDING');
+        try {
+            const token = await currentUser.getIdToken();
+            const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ text })
+            });
+            if (res.ok) {
+                showToast("Feedback Sent", "success");
+                navigate('dashboard');
+            }
+        } catch(e) {}
+        toggleSpinner(false);
+    };
     toggleSpinner(false);
 }
 
