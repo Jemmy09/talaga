@@ -60,15 +60,23 @@ function initApp() {
     tContainer.className = 'toast-container';
     document.body.appendChild(tContainer);
 
+    // Handle redirect result first (in case user was mid-redirect)
+    auth.getRedirectResult().then(result => {
+        if (result && result.user) {
+            console.log("Redirect login successful:", result.user.displayName);
+        }
+    }).catch(e => {
+        console.error("Redirect result error:", e.message);
+        showToast(e.message, 'error');
+    });
+
     // Auth State Observer
     auth.onAuthStateChanged(async (user) => {
         console.log("Auth State Changed:", user ? "LoggedIn" : "LoggedOut");
         if (user) {
             currentUser = user;
-            // Navigate FIRST so login feels instant and responsive
             const currentHash = window.location.hash.replace('#', '') || 'dashboard';
             navigate(currentHash);
-            // Then fetch notes in the background (non-blocking)
             fetchAllNotes().catch(e => console.warn("Background note sync:", e.message));
         } else {
             currentUser = null;
@@ -227,7 +235,7 @@ function renderLogin() {
 
     document.getElementById('google-signin').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithRedirect(provider).catch(e => {
+        auth.signInWithPopup(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
@@ -265,7 +273,7 @@ function renderRegister() {
 
     document.getElementById('google-signup').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithRedirect(provider).catch(e => {
+        auth.signInWithPopup(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
