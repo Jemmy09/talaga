@@ -231,12 +231,181 @@ async function loadNotes() {
     } else {
         empty.classList.add('hidden');
         list.innerHTML = notes.map(n => `
-            <div class="note-card">
-                <h3>${n.title || 'Untitled'}</h3>
-                <p>${(n.content || '').substring(0, 100)}...</p>
+            <div class="note-card" onclick="openNoteModal('${n.id}')">
+                <div class="note-card-header">
+                    <h3>${n.title || 'Untitled'}</h3>
+                    <button onclick="event.stopPropagation(); deleteNote('${n.id}')" class="delete-btn">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <p>${(n.content || '').substring(0, 120)}${(n.content || '').length > 120 ? '...' : ''}</p>
+                <div class="note-card-footer">
+                    <span>${new Date(n.updated_at || n.created_at).toLocaleDateString()}</span>
+                </div>
             </div>
         `).join('');
     }
+}
+
+function openNoteModal(noteId = null) {
+    const modal = document.getElementById('note-modal');
+    const titleInput = document.getElementById('note-title-input');
+    const contentInput = document.getElementById('note-content-input');
+    const saveBtn = document.getElementById('save-note-btn');
+    const deleteBtn = document.getElementById('delete-modal-btn');
+    
+    const note = noteId ? notes.find(n => n.id === noteId) : null;
+    
+    titleInput.value = note ? note.title : '';
+    contentInput.value = note ? note.content : '';
+    modal.dataset.currentId = noteId || '';
+    
+    if (noteId) {
+        deleteBtn.classList.remove('hidden');
+        deleteBtn.onclick = () => { deleteNote(noteId); closeModal(); };
+    } else {
+        deleteBtn.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    saveBtn.onclick = async () => {
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+        if (!title && !content) return;
+
+        toggleSpinner(true, 'SAVING NOTE');
+        try {
+            const token = await currentUser.getIdToken();
+            const method = noteId ? 'PUT' : 'POST';
+            const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
+            
+            const res = await fetch(url, {
+                method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, content })
+            });
+            
+            if (res.ok) {
+                showToast(noteId ? 'Note updated' : 'Note saved', 'success');
+                closeModal();
+                loadNotes();
+            } else {
+                const err = await res.json();
+                showToast(err.error || 'Failed to save', 'error');
+            }
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            toggleSpinner(false);
+        }
+    };
+}
+
+function closeModal() {
+    const modal = document.getElementById('note-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function deleteNote(id) {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    
+    toggleSpinner(true, 'DELETING');
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Note deleted', 'success');
+            loadNotes();
+        }
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        toggleSpinner(false);
+    }
+}
+
+function renderProfile() {
+    viewContainer.innerHTML = `
+        <div class="profile-container" style="animation: slideUp 0.6s ease-out">
+            <div class="profile-header">
+                <img src="${currentUser.photoURL}" class="profile-avatar" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 1.5rem">
+                <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">${currentUser.displayName}</h1>
+                <p style="color: var(--text-muted)">${currentUser.email}</p>
+            </div>
+            
+            <div class="profile-stats" style="display: flex; gap: 2rem; margin-top: 3rem">
+                <div class="stat-card" style="background: var(--glass-bg); padding: 1.5rem 2.5rem; border-radius: 1.5rem; border: 1px solid var(--glass-border); text-align: center; flex: 1">
+                    <h2 style="font-size: 2rem; color: var(--primary)">${notes.length}</h2>
+                    <p style="font-size: 0.9rem; color: var(--text-dim)">Total Notes</p>
+                </div>
+                <div class="stat-card" style="background: var(--glass-bg); padding: 1.5rem 2.5rem; border-radius: 1.5rem; border: 1px solid var(--glass-border); text-align: center; flex: 1">
+                    <h2 style="font-size: 2rem; color: var(--success)">Active</h2>
+                    <p style="font-size: 0.9rem; color: var(--text-dim)">Account Status</p>
+                </div>
+            </div>
+            
+            <div style="margin-top: 4rem; border-top: 1px solid var(--glass-border); padding-top: 2rem">
+                <button class="btn-primary" onclick="auth.signOut()" style="background: var(--error)">Log Out Everywhere</button>
+            </div>
+        </div>
+    `;
+    toggleSpinner(false);
+}
+
+function renderSettings() {
+    viewContainer.innerHTML = `
+        <div class="settings-container" style="animation: slideUp 0.6s ease-out; max-width: 600px">
+            <h1 style="margin-bottom: 2rem">Settings</h1>
+            
+            <div class="settings-section" style="background: var(--glass-bg); border-radius: 1.5rem; border: 1px solid var(--glass-border); padding: 2rem; display: flex; flex-direction: column; gap: 2rem">
+                <div style="display: flex; justify-content: space-between; align-items: center">
+                    <div>
+                        <h3 style="margin-bottom: 0.3rem">Ultra Dark Mode</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-dim)">Enhances contrast for night use.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center">
+                    <div>
+                        <h3 style="margin-bottom: 0.3rem">Compact List</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-dim)">Show more notes on one screen.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+    toggleSpinner(false);
+}
+
+function renderAbout() {
+    viewContainer.innerHTML = `
+        <div class="about-container" style="animation: slideUp 0.6s ease-out; text-align: center">
+            <img src="images/logo.png" style="width: 120px; margin-bottom: 2rem">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem">Talaga</h1>
+            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 3rem; line-height: 1.8">
+                Talaga is more than just a note-taking app. It is your premium digital sanctuary for clear thinking, organized living, and professional growth. Built with state-of-the-art security and elegant design.
+            </p>
+            <div style="color: var(--text-dim); font-size: 0.9rem">Version 3.2 (Reliability Core)</div>
+        </div>
+    `;
+    toggleSpinner(false);
 }
 
 document.addEventListener('DOMContentLoaded', initApp);

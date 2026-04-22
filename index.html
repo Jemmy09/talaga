@@ -95,6 +95,22 @@
     </div>
 
     <!-- Modals (Note editor, tutorial, etc.) -->
+    <div id="note-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <input type="text" id="note-title-input" class="modal-input" placeholder="Title">
+            <textarea id="note-content-input" class="modal-input" placeholder="Start typing your genius idea..."></textarea>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem">
+                <button id="delete-modal-btn" class="delete-btn hidden" title="Delete Note">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <div style="display: flex; gap: 1rem; margin-left: auto">
+                    <button onclick="closeModal()" class="nav-item-btn" style="background: transparent; border: none; padding: 0.8rem 1.5rem">Cancel</button>
+                    <button id="save-note-btn" class="btn-primary">Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="modal-container" class="modal-overlay hidden"></div>
 
     <!-- Main Logic -->
