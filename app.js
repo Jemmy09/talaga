@@ -63,14 +63,14 @@ function initApp() {
         if (user) {
             currentUser = user;
             const currentHash = window.location.hash.replace('#', '');
-            
+
             // If logged in but on login/register page, force move to dashboard
             if (!currentHash || currentHash === 'login' || currentHash === 'register') {
                 navigate('dashboard');
             } else {
                 showView(currentHash); // Force immediate render
             }
-            
+
             fetchAllNotes().catch(e => console.warn("Background note sync:", e.message));
         } else {
             currentUser = null;
@@ -88,6 +88,11 @@ function initApp() {
     // Event Listeners
     if (logoutBtn) logoutBtn.onclick = () => auth.signOut().catch(e => showToast(e.message, 'error'));
     if (menuToggle) menuToggle.onclick = () => mainNav.classList.toggle('open');
+    
+    // Catch Redirect Errors (like domain blocking)
+    auth.getRedirectResult().catch(e => {
+        if (e.code) showToast(`Auth Error: ${e.message}`, 'error');
+    });
 
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.onclick = () => navigate(li.dataset.view);
@@ -158,7 +163,7 @@ const showView = (viewName) => {
         navigate('login');
         return;
     }
-    
+
     // Reverse Guard: If logged in, don't show login/register
     if (currentUser && (viewName === 'login' || viewName === 'register')) {
         navigate('dashboard');
@@ -194,7 +199,7 @@ const showView = (viewName) => {
             default: renderDashboard();
         }
         document.title = `Talaga | ${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`;
-        
+
         // Failsafe: If the renderer didn't clear the spinner, clear it now
         // This prevents the "Infinite Blank Screen" if a specific view fails to clear it.
         if (viewName !== 'dashboard') {
@@ -467,7 +472,7 @@ function renderProfile() {
                 document.getElementById('profile-name').innerText = newName.trim();
                 showToast("Profile name updated!", "success");
                 navigate('dashboard');
-                setTimeout(()=>navigate('profile'), 100);
+                setTimeout(() => navigate('profile'), 100);
             } catch (e) {
                 showToast(e.message, "error");
             }
@@ -541,7 +546,7 @@ function renderSettings() {
 
     const isUltraDark = document.body.classList.contains('ultra-dark');
     const isReducedMotion = document.body.classList.contains('reduced-motion');
-    
+
     if (isUltraDark) document.getElementById('theme-toggle').classList.add('active');
     if (isReducedMotion) document.getElementById('motion-toggle').classList.add('active');
 
@@ -551,13 +556,13 @@ function renderSettings() {
     document.getElementById('save-settings').onclick = () => {
         const darkActive = document.getElementById('theme-toggle').classList.contains('active');
         const motionActive = document.getElementById('motion-toggle').classList.contains('active');
-        
+
         if (darkActive) document.body.classList.add('ultra-dark');
         else document.body.classList.remove('ultra-dark');
-        
+
         if (motionActive) document.body.classList.add('reduced-motion');
         else document.body.classList.remove('reduced-motion');
-        
+
         showToast("Settings saved successfully!", "success");
     };
 
@@ -616,7 +621,7 @@ function renderSettings() {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
+
                 await auth.currentUser.delete();
                 showToast("Account successfully deleted.", "info");
             } catch (e) {
@@ -694,15 +699,15 @@ async function handleFeedbackSubmit(e) {
         const token = await auth.currentUser.getIdToken(true);
         const response = await fetch(`${API_BASE_URL}/api/feedback`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ text })
         });
-        
+
         if (!response.ok) throw new Error('Failed to send feedback');
-        
+
         showToast("Thank you for your professional feedback!", "success");
         setTimeout(() => navigate('dashboard'), 1500);
     } catch (e) {
