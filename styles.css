@@ -68,10 +68,6 @@ body.ultra-dark {
 }
 
 /* Mobile Header */
-
-.flex { display: flex !important; }
-
-/* Mobile Header */
 .mobile-header {
     display: none;
     justify-content: space-between;
