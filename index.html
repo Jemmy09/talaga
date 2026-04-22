@@ -87,8 +87,11 @@
     </div>
 
     <!-- Spinner Overlay -->
-    <div id="loading-spinner" class="spinner-overlay">
-        <div class="spinner"></div>
+    <div id="loading-spinner" class="spinner-overlay hidden">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem">
+            <div class="spinner"></div>
+            <p id="spinner-text" style="color: var(--text-dim); font-size: 0.9rem; font-weight: 500; letter-spacing: 1px">LOADING SPACE</p>
+        </div>
     </div>
 
     <!-- Modals (Note editor, tutorial, etc.) -->

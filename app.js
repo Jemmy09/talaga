@@ -66,8 +66,9 @@ function initApp() {
 
             // If logged in but on login/register page, force move to dashboard
             if (!currentHash || currentHash === 'login' || currentHash === 'register') {
+                toggleSpinner(true, 'SYNCING WORKSPACE');
                 window.location.hash = 'dashboard';
-                showView('dashboard'); // Force immediate render
+                showView('dashboard');
             } else {
                 showView(currentHash);
             }
@@ -213,8 +214,12 @@ const showView = (viewName) => {
     }
 };
 
-const toggleSpinner = (show) => {
-    if (spinner) spinner.classList.toggle('hidden', !show);
+const toggleSpinner = (show, text = 'LOADING SPACE') => {
+    if (spinner) {
+        spinner.classList.toggle('hidden', !show);
+        const textEl = document.getElementById('spinner-text');
+        if (textEl) textEl.innerText = text.toUpperCase();
+    }
 };
 
 // --- View Renderers ---
@@ -247,7 +252,7 @@ function renderLogin() {
         `;
 
     document.getElementById('google-signin').onclick = () => {
-        toggleSpinner(true);
+        toggleSpinner(true, 'AUTHENTICATING');
         auth.signInWithRedirect(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
@@ -285,7 +290,7 @@ function renderRegister() {
         `;
 
     document.getElementById('google-signup').onclick = () => {
-        toggleSpinner(true);
+        toggleSpinner(true, 'AUTHENTICATING');
         auth.signInWithRedirect(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
