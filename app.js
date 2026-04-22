@@ -55,23 +55,26 @@ function initApp() {
     viewContainer = document.getElementById('view-container');
     mainNav = document.getElementById('main-nav');
     
-    // Load persisted theme
-    if (localStorage.getItem('ultraDark') === 'true') {
-        document.body.classList.add('ultra-dark');
-    }
+    // Instant Theme Recovery (Prevent Flash)
+    const isUltra = localStorage.getItem('ultraDark') === 'true';
+    if (isUltra) document.body.classList.add('ultra-dark');
 
-    toggleSpinner(true, 'SECURING SPACE');
+    toggleSpinner(true, 'RESTORING SANCTUARY');
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
+    let isInitialLoad = true;
     auth.onAuthStateChanged(async (user) => {
         currentUser = user;
         if (user) {
             const hash = window.location.hash.replace('#', '') || 'dashboard';
-            showView(hash);
-            fetchAllNotes();
+            await showView(hash);
+            await fetchAllNotes();
+            if (hash === 'dashboard') loadNotes();
         } else {
             showView('login');
         }
+        isInitialLoad = false;
+        toggleSpinner(false);
     });
 
     // Keyboard Shortcuts (Functional & Responsive)
