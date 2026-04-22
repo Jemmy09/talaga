@@ -5,87 +5,33 @@ const cors = require('cors');
 const fs = require('fs');
 require('dotenv').config();
 
-// NOTE: Do NOT set NODE_TLS_REJECT_UNAUTHORIZED=0 in production.
+const app = express();
+const port = process.env.PORT || 3000;
+
+// --- Firebase Admin Initialization ---
+// You will need to download your Service Account JSON from Firebase Console
+// and either point to the file path or set it as an environment variable.
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+    ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString())
+    : require('./serviceAccountKey.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 // --- PostgreSQL Connection (Aiven) ---
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: true
+  ssl: fs.existsSync('./ca.pem') ? {
+    ca: fs.readFileSync('./ca.pem').toString(),
+    rejectUnauthorized: true 
+  } : {
+    rejectUnauthorized: false // Fallback for easier setup
   }
 });
 
-// --- HEAVY-DUTY DATABASE INITIALIZER ---
-// Move this here so 'pool' is defined before it runs!
-(async () => {
-  console.log("🛠️  INITIATING DATABASE FORCE-BUILD...");
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS notes (
-          id SERIAL PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          title VARCHAR(255) NOT NULL,
-          description TEXT,
-          content TEXT,
-          category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS feedback (
-          id SERIAL PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          user_name VARCHAR(255),
-          message TEXT NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    
-    console.log("✨ DATABASE IS ARMED AND READY!");
-  } catch (err) {
-    console.error("❌ DATABASE INITIALIZER FAILED:", err.message);
-  }
-})();
-
-const app = express();
-const port = process.env.PORT || 3010; // Standard professional port
-
-// --- Pre-flight Checks (Professional Security) ---
-if (!process.env.DATABASE_URL) {
-    console.warn('⚠️ WARNING: DATABASE_URL is not set. Database operations will fail.');
-}
-
-let serviceAccount;
-try {
-    serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-        ? JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString())
-        : require('./serviceAccountKey.json');
-    
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('✅ Firebase Admin initialized successfully.');
-} catch (error) {
-    console.error('❌ CRITICAL ERROR: Firebase Service Account missing or invalid.');
-    console.error('Ensure FIREBASE_SERVICE_ACCOUNT environment variable is set in Render.');
-}
-
 // --- Middleware ---
-const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://jemmyfrancisco30.github.io' // Replace with your actual GitHub Pages URL
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json());
 
 // --- Auth Middleware ---
@@ -118,37 +64,37 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('❌ Database Query Error:', err.message);
-    res.status(500).json({ error: 'Database error', details: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 // 2. Create a new note
 app.post('/api/notes', authenticateUser, async (req, res) => {
-  const { title, description, content, category } = req.body;
+  const { title, content, category } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
     const result = await pool.query(
-      'INSERT INTO notes (user_id, title, description, content, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [req.user.uid, title, description, content, category]
+      'INSERT INTO notes (user_id, title, content, category) VALUES ($1, $2, $3, $4) RETURNING *',
+      [req.user.uid, title, content, category]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('❌ Database Insert Error:', err.message);
-    res.status(500).json({ error: 'Database error', details: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 // 3. Update an existing note
 app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { title, description, content, category } = req.body;
+  const { title, content, category } = req.body;
   
   try {
     const result = await pool.query(
-      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4 WHERE id = $5 AND user_id = $6 RETURNING *',
-      [title, description, content, category, id, req.user.uid]
+      'UPDATE notes SET title = $1, content = $2, category = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+      [title, content, category, id, req.user.uid]
     );
     
     if (result.rowCount === 0) {
@@ -209,50 +155,8 @@ app.post('/api/feedback', authenticateUser, async (req, res) => {
   }
 });
 
-// Root Landing Page (Professional Confirmation)
-app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Talaga API | Professional Workspace</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
-        <style>
-            body { font-family: 'Outfit', sans-serif; background: #0b0f1a; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-            .container { padding: 3rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 32px; backdrop-filter: blur(20px); }
-            h1 { color: #6366f1; margin-bottom: 1rem; }
-            p { color: #94a3b8; margin: 0; }
-            .badge { display: inline-block; padding: 6px 16px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 100px; font-size: 0.85rem; font-weight: bold; margin-top: 1.5rem; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Talaga Backend Server</h1>
-            <p>Your premium personal dashboard API is fully operational.</p>
-            <div class="badge">● SYSTEM LIVE</div>
-        </div>
-    </body>
-    </html>
-  `);
-});
-
-// Health Check (Deep Verification)
-app.get('/health', async (req, res) => {
-  try {
-    const dbCheck = await pool.query('SELECT 1');
-    res.json({ 
-        status: 'ok', 
-        database: 'connected', 
-        ping: 'success',
-        timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error('❌ Health Check Failed:', err.message);
-    res.status(500).json({ status: 'error', database: 'disconnected', details: err.message });
-  }
-});
+// Health Check
+app.get('/health', (req, res) => res.json({ status: 'ok', database: 'connected' }));
 
 app.listen(port, () => {
   console.log(`Talaga Backend running at http://localhost:${port}`);
