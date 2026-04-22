@@ -260,6 +260,10 @@ body {
 .badge-todo { background: rgba(16, 185, 129, 0.1); color: var(--success); }
 .badge-account { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
 .badge-info { background: rgba(99, 102, 241, 0.1); color: var(--primary-light); }
+.badge-business { background: rgba(168, 85, 247, 0.1); color: var(--secondary); }
+.badge-student { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.badge-personal { background: rgba(244, 63, 94, 0.1); color: var(--accent); }
+.badge-other { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); }
 
 /* Auth Layout */
 .auth-container {
@@ -485,4 +489,45 @@ select option {
     #main-nav.open { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.5); }
     .brand-name, .nav-links li span, .nav-item-btn span { display: block; }
     #main-content { padding: 1.5rem; }
+    
+    /* Fix grids for mobile */
+    .auth-container { padding: 1.5rem; margin: 2rem auto; }
+    .settings-group { padding: 1rem; }
+    .notes-grid { grid-template-columns: 1fr; }
+    div[style*="grid-template-columns: 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    
+    header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    header div[style*="display: flex; gap: 1rem"] { width: 100%; }
+    header button { flex: 1; justify-content: center; }
+}
+
+/* User Settings Themes */
+body.ultra-dark {
+    --bg-dark: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-card: rgba(0, 0, 0, 0.9);
+    --glass-bg: rgba(20, 20, 20, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.05);
+}
+
+body.reduced-motion *, 
+body.reduced-motion *::before, 
+body.reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* Fullscreen Modal Override */
+.fullscreen-overlay {
+    padding: 0 !important;
+}
+.fullscreen-modal {
+    margin: 0 !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
 }
