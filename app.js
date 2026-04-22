@@ -224,7 +224,7 @@ function renderLogin() {
 
     document.getElementById('google-signin').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithPopup(provider).catch(e => {
+        auth.signInWithRedirect(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
@@ -262,7 +262,7 @@ function renderRegister() {
 
     document.getElementById('google-signup').onclick = () => {
         toggleSpinner(true);
-        auth.signInWithPopup(provider).catch(e => {
+        auth.signInWithRedirect(provider).catch(e => {
             toggleSpinner(false);
             showToast(e.message, 'error');
         });
