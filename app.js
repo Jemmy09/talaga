@@ -378,7 +378,7 @@ async function showView(viewName) {
             case 'login': renderLogin(); break;
             default: renderDashboard();
         }
-        document.title = `Talaga | ${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`;
+        document.title = "Talaga";
         if (viewName !== 'dashboard') toggleSpinner(false);
     } catch (e) { toggleSpinner(false); }
 }
