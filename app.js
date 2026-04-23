@@ -453,12 +453,15 @@ function openNoteModal(noteId = null) {
                     <div style="flex: 1">
                         <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
                             <span style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${note?.category || 'General Note'}</span>
-                            ${!note?.is_owner ? '<span style="display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Shared Note</span>' : ''}
+                            ${!note?.is_owner ? `
+                                <span style="display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Shared Note</span>
+                                ${!note?.can_edit ? '<span style="display: inline-block; padding: 4px 12px; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Viewer Only</span>' : ''}
+                            ` : ''}
                         </div>
                         <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.2">${note ? note.title : 'New Note'}</h1>
                         <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.75rem">
                             <p style="color: var(--text-dim); font-size: 0.8rem;">Owner: <strong style="color: white">${note?.owner_name || 'You'}</strong></p>
-                            <p style="color: var(--text-dim); font-size: 0.8rem;">Last Editor: <strong style="color: white">${note?.last_editor_name || 'N/A'}</strong></p>
+                            ${note?.last_editor_name ? `<p style="color: var(--text-dim); font-size: 0.8rem;">Last Editor: <strong style="color: white">${note.last_editor_name}</strong></p>` : ''}
                             <p style="color: var(--text-dim); font-size: 0.8rem;">Updated: ${new Date(note ? (note.updated_at || note.created_at) : Date.now()).toLocaleString()}</p>
                         </div>
                     </div>
@@ -468,7 +471,7 @@ function openNoteModal(noteId = null) {
                             <button id="copy-quick-link-btn" class="delete-btn" title="Copy Share Link" style="color: #10b981; background: rgba(16, 185, 129, 0.05)"><i class="fas fa-link"></i></button>
                             <button id="manage-note-btn" class="delete-btn" title="Manage Note" style="color: var(--secondary); background: rgba(168, 85, 247, 0.05)"><i class="fas fa-user-cog"></i></button>
                         ` : ''}
-                        ${(note?.is_owner || note?.can_edit !== false) ? `<button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>` : ''}
+                        ${(note?.is_owner || note?.can_edit) ? `<button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>` : ''}
                         ${note?.is_owner ? `<button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>` : ''}
                         <button onclick="closeModal()" class="delete-btn" title="Close"><i class="fas fa-times"></i></button>
                     </div>

@@ -151,7 +151,7 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
     const result = await pool.query(
       `SELECT DISTINCT n.*, 
        (n.user_id = $1) as is_owner,
-       COALESCE(c.can_edit, false) as can_edit
+       CASE WHEN n.user_id = $1 THEN true ELSE COALESCE(c.can_edit, false) END as can_edit
        FROM notes n
        LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
        WHERE n.user_id = $1 OR c.user_email = $2
