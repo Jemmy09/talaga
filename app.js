@@ -767,12 +767,25 @@ function openNoteModal(noteId = null) {
                     </div>
                 </div>
                 
-                <div id="attachments-display" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem">
-                    ${(note?.attachments || []).map(url => `
-                        <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); aspect-ratio: 1; background: #000">
-                            <img src="${url}" class="lightbox-trigger" style="width: 100%; height: 100%; object-fit: cover; cursor: zoom-in;">
-                        </div>
-                    `).join('')}
+                <div id="attachments-display" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem">
+                    ${(note?.attachments || []).map((url, idx) => {
+                        const isImage = url.startsWith('data:image/');
+                        if (isImage) {
+                            return `
+                                <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); aspect-ratio: 1; background: #000; position: relative;" class="view-enter">
+                                    <img src="${url}" class="lightbox-trigger" style="width: 100%; height: 100%; object-fit: cover; cursor: zoom-in;">
+                                </div>
+                            `;
+                        } else {
+                            const fileName = `Document ${idx + 1}`;
+                            return `
+                                <a href="${url}" download="${fileName}" style="text-decoration: none; border-radius: 12px; border: 1px solid var(--glass-border); aspect-ratio: 1; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-dim); transition: var(--transition);" class="nav-item-btn view-enter">
+                                    <i class="fas fa-file-alt" style="font-size: 2rem; color: var(--primary)"></i>
+                                    <span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Download</span>
+                                </a>
+                            `;
+                        }
+                    }).join('')}
                 </div>
 
                 ${!note?.is_owner && !note?.can_edit ? `
@@ -851,18 +864,21 @@ function openNoteModal(noteId = null) {
                         <option value="personal" ${note?.category === 'personal' ? 'selected' : ''}>Personal</option>
                         <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
                     </select>
-                    <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="file" id="note-image-picker" accept="image/*" multiple style="display: none;">
-                        <button id="trigger-image-picker" class="delete-btn" style="color: var(--primary); background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; width: auto; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; border-radius: 10px;">
-                            <i class="fas fa-plus"></i> Add Files
+                    <div style="flex: 1; display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="file" id="note-image-picker" multiple style="display: none;">
+                        <button id="trigger-image-picker" class="delete-btn" style="color: var(--primary); background: rgba(99, 102, 241, 0.05); padding: 0.6rem 1.2rem; width: auto; font-size: 0.85rem; display: flex; align-items: center; gap: 0.75rem; border-radius: 12px;">
+                            <i class="fas fa-paperclip"></i> Attach Files
                         </button>
-                        <div id="edit-attachments-preview" style="flex: 1; display: flex; gap: 0.5rem; overflow-x: auto; padding: 4px;">
-                            ${(note?.attachments || []).map((url, idx) => `
-                                <div style="position: relative; height: 40px; width: 40px; flex-shrink: 0;">
-                                    <img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 6px;">
-                                    <button onclick="removeAttachment(${idx})" style="position: absolute; -10px; top: -10px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;"><i class="fas fa-times"></i></button>
-                                </div>
-                            `).join('')}
+                        <div id="edit-attachments-preview" style="flex: 1; display: flex; gap: 0.75rem; overflow-x: auto; padding: 5px; scrollbar-width: none;">
+                            ${(note?.attachments || []).map((url, idx) => {
+                                const isImage = url.startsWith('data:image/');
+                                return `
+                                    <div style="position: relative; height: 50px; width: 50px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--glass-border); background: #000; overflow: visible;">
+                                        ${isImage ? `<img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 8px;">` : `<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-file-alt" style="color: var(--primary)"></i></div>`}
+                                        <button onclick="window.removeAttachment(${idx})" style="position: absolute; right: -8px; top: -8px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); border: 2px solid var(--bg-body);"><i class="fas fa-times"></i></button>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 </div>
@@ -905,31 +921,41 @@ function openNoteModal(noteId = null) {
         };
 
         const updateAttachmentPreview = () => {
-            document.getElementById('edit-attachments-preview').innerHTML = attachments.map((url, idx) => `
-                <div style="position: relative; height: 40px; width: 40px; flex-shrink: 0;">
-                    <img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 6px;">
-                    <button onclick="removeAttachment(${idx})" style="position: absolute; right: -5px; top: -5px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;"><i class="fas fa-times"></i></button>
-                </div>
-            `).join('');
+            const preview = document.getElementById('edit-attachments-preview');
+            preview.innerHTML = attachments.map((url, idx) => {
+                const isImage = url.startsWith('data:image/');
+                return `
+                    <div style="position: relative; height: 50px; width: 50px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--glass-border); background: #000; overflow: visible;">
+                        ${isImage ? `<img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 8px;">` : `<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-file-alt" style="color: var(--primary)"></i></div>`}
+                        <button onclick="window.removeAttachment(${idx})" style="position: absolute; right: -8px; top: -8px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); border: 2px solid var(--bg-body);"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            }).join('');
         };
+        
+        updateAttachmentPreview();
 
         document.getElementById('trigger-image-picker').onclick = () => document.getElementById('note-image-picker').click();
         
         document.getElementById('note-image-picker').onchange = (e) => {
             const files = Array.from(e.target.files);
+            let processed = 0;
             files.forEach(file => {
-                if (file.size > 2 * 1024 * 1024) {
-                    showToast(`File ${file.name} too large`, "error");
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast(`File ${file.name} too large (>5MB)`, "error");
                     return;
                 }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     attachments.push(event.target.result);
-                    updateAttachmentPreview();
+                    processed++;
+                    if (processed === files.length) {
+                        updateAttachmentPreview();
+                        showToast(`${files.length} Files attached`, "success");
+                    }
                 };
                 reader.readAsDataURL(file);
             });
-            showToast("Files attached", "success");
         };
 
         if (noteId) document.getElementById('cancel-edit-btn').onclick = () => renderReadView();
