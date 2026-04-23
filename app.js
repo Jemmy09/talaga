@@ -417,9 +417,14 @@ function renderLogin() {
                 <span>Login with Google</span>
             </button>
         </div>`;
-    document.getElementById('google-signin').onclick = () => {
+    document.getElementById('google-signin').onclick = async () => {
         toggleSpinner(true, 'AUTHENTICATING');
-        auth.signInWithPopup(provider);
+        try {
+            await auth.signInWithPopup(provider);
+        } catch (e) {
+            toggleSpinner(false);
+            showToast(e.message, "error");
+        }
     };
     toggleSpinner(false);
 }
