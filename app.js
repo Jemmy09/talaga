@@ -11,12 +11,20 @@ function toggleSpinner(show, text = 'LOADING SPACE') {
             textEl.innerText = upText;
             
             // Smart Wake-up Feedback for Render Cold Starts
-            if (show && (upText.includes('LOADING') || upText.includes('RESTORING') || upText.includes('FETCHING'))) {
+            if (show && (upText.includes('LOADING') || upText.includes('RESTORING') || upText.includes('FETCHING') || upText.includes('AUTHENTICATING'))) {
                 setTimeout(() => {
                     if (!spinner.classList.contains('hidden') && textEl.innerText === upText) {
                         textEl.innerText = 'SERVER IS WAKING UP...';
                     }
                 }, 6000);
+                
+                // Absolute Fail-safe: Hide spinner after 12 seconds if no data arrives
+                setTimeout(() => {
+                    if (!spinner.classList.contains('hidden') && textEl.innerText.includes('WAKING UP')) {
+                        spinner.classList.add('hidden');
+                        showToast("Connection is slow. Please refresh.", "warning");
+                    }
+                }, 15000);
             }
         }
     }
@@ -341,7 +349,11 @@ async function checkUserStatus() {
     if (logoutBtn) {
         logoutBtn.onclick = () => {
             toggleSpinner(true, 'SIGNING OUT');
-            auth.signOut().then(() => showToast('Signed out successfully', 'success'));
+            // Optimistic cleanup: hide the menu immediately if on mobile
+            if (window.innerWidth <= 768) toggleMenu(true);
+            auth.signOut().catch(() => toggleSpinner(false));
+            // Fail-safe dismissal in case of heavy DNS lag
+            setTimeout(() => toggleSpinner(false), 3000);
         };
     }
 
