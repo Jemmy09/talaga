@@ -59,7 +59,7 @@ function initApp() {
     const isUltra = localStorage.getItem('ultraDark') === 'true';
     if (isUltra) document.body.classList.add('ultra-dark');
 
-    toggleSpinner(true, 'RESTORING SANCTUARY');
+    toggleSpinner(true, 'RESTORING NOTES');
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
     let isInitialLoad = true;
