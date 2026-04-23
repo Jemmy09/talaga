@@ -34,6 +34,11 @@ const pool = new Pool({
       );
     `);
     
+    // Auto-migrate: Add columns if they are missing from an older schema version
+    try { await pool.query('ALTER TABLE notes ADD COLUMN description TEXT;'); } catch (e) { /* Ignore if exists */ }
+    try { await pool.query('ALTER TABLE notes ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;'); } catch (e) { /* Ignore if exists */ }
+    try { await pool.query('ALTER TABLE notes ADD COLUMN category VARCHAR(50) DEFAULT \'info\';'); } catch (e) { /* Ignore if exists */ }
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS feedback (
           id SERIAL PRIMARY KEY,
