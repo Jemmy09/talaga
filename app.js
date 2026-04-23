@@ -178,8 +178,8 @@ function renderLogin() {
     if (mainNav) mainNav.classList.add('hidden');
     viewContainer.innerHTML = `
         <div class="auth-container" style="animation: slideUp 0.6s ease-out">
-            <div style="text-align: center; margin-bottom: 2.5rem">
-                <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem">
+            <div style="text-align: center; margin-bottom: 2.5rem; display: flex; flex-direction: column; align-items: center;">
+                <img src="images/logo.png" style="width: 80px; margin-bottom: 1.5rem; display: block;">
                 <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem">Login</h1>
                 <p style="color: var(--text-muted)">A simple space for your thoughts.</p>
             </div>
@@ -254,21 +254,21 @@ function renderSettings() {
 
 function renderAbout() {
     viewContainer.innerHTML = `
-        <div class="about-container" style="animation: slideUp 0.6s ease-out; text-align: center; max-width: 600px; margin: 0 auto">
-            <img src="images/logo.png" style="width: 100px; margin-bottom: 2rem">
-            <h1>Talaga Sanctuary</h1>
-            <p style="color: var(--text-muted); margin-bottom: 3rem">Developed with precision by <strong>Jemmy Francisco</strong>.</p>
-            <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 2rem; border: 1px solid var(--glass-border)">
+        <div class="about-container" style="animation: slideUp 0.6s ease-out; text-align: center; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
+            <img src="images/logo.png" style="width: 100px; margin-bottom: 2rem; display: block;">
+            <h1>Talaga</h1>
+            <p style="color: var(--text-muted); margin-bottom: 3rem">Developed by <strong>Jemmy Francisco</strong></p>
+            <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 2rem; border: 1px solid var(--glass-border); width: 100%;">
                 <h3 style="margin-bottom: 1.5rem">Contact Developer</h3>
-                <div style="display: flex; justify-content: center; gap: 3rem">
-                    <a href="mailto:Jemmyfrancisco30@gmail.com" style="color: #EA4335; font-size: 2.5rem" title="Gmail">
+                <div style="display: flex; justify-content: center; gap: 3rem; position: relative; z-index: 10;">
+                    <a href="mailto:Jemmyfrancisco30@gmail.com" style="color: #EA4335; font-size: 2.5rem; display: inline-block; cursor: pointer; position: relative; z-index: 20;" title="Gmail">
                         <i class="fas fa-envelope"></i>
                     </a>
-                    <a href="https://facebook.com/jemmy.francisco.98" target="_blank" style="color: #1877F2; font-size: 2.5rem" title="Facebook">
+                    <a href="https://facebook.com/jemmy.francisco.98" target="_blank" style="color: #1877F2; font-size: 2.5rem; display: inline-block; cursor: pointer; position: relative; z-index: 20;" title="Facebook">
                         <i class="fab fa-facebook"></i>
                     </a>
                 </div>
-                <p style="margin-top: 2rem; font-size: 0.9rem; color: var(--text-dim)">Jemmyfrancisco30@gmail.com</p>
+                <a href="mailto:Jemmyfrancisco30@gmail.com" style="display: block; margin-top: 2rem; font-size: 0.9rem; color: var(--text-dim); text-decoration: none; position: relative; z-index: 20;">Jemmyfrancisco30@gmail.com</a>
             </div>
         </div>
     `;
@@ -312,12 +312,15 @@ function renderHelp() {
         <div class="help-container" style="animation: slideUp 0.6s ease-out; max-width: 600px; margin: 0 auto">
             <h1>Help & Support</h1>
             <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 2rem; border: 1px solid var(--glass-border); margin-top: 2rem">
-                <h3 style="margin-bottom: 1.5rem">Keyboard Master</h3>
+                <h3 style="margin-bottom: 1.5rem">Keyboard Shortcuts</h3>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border)">
                     <span>New Note</span><kbd style="color: var(--primary); font-weight: bold">Alt + N</kbd>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding-top: 1rem">
+                <div style="display: flex; justify-content: space-between; padding-top: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem">
                     <span>Close Modal</span><kbd style="color: var(--primary); font-weight: bold">Esc</kbd>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 1rem">
+                    <span>Save Note (Edit Mode)</span><kbd style="color: var(--primary); font-weight: bold">Enter</kbd>
                 </div>
             </div>
         </div>
