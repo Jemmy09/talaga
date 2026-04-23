@@ -105,6 +105,30 @@ function initApp() {
         
         isInitialLoad = false;
     });
+
+    // --- Global Keyboard Shortcuts (Professional Grade) ---
+    window.addEventListener('keydown', (e) => {
+        // Alt + N for New Note
+        if (e.altKey && e.key.toLowerCase() === 'n') {
+            e.preventDefault();
+            if (currentUser) {
+                navigate('dashboard');
+                openNoteModal();
+            }
+        }
+        // Esc to close Modals
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+        // Ctrl + S to Save Note (Professional Workflow)
+        if (e.ctrlKey && e.key.toLowerCase() === 's') {
+            const saveBtn = document.getElementById('save-note-btn');
+            if (saveBtn) {
+                e.preventDefault();
+                saveBtn.click();
+            }
+        }
+    });
 }
 
 async function loadPublicNote(token) {
@@ -301,14 +325,13 @@ async function respondToInvite(id, action) {
 async function checkUserStatus() {
     if (currentUser) {
         const hash = window.location.hash.replace('#', '') || 'dashboard';
-        await showView(hash);
-        await fetchAllNotes();
-        await loadNotifications();
-        if (hash === 'dashboard') loadNotes();
+        showView(hash);
+        loadDashboard(); // Async background load
     } else {
         showView('login');
+        toggleSpinner(false);
     }
-    toggleSpinner(false);
+}
 
     // Keyboard Shortcuts (Functional & Responsive) - Only add once
     if (!window.shortcutsInitialized) {
@@ -349,11 +372,19 @@ async function checkUserStatus() {
     if (logoutBtn) {
         logoutBtn.onclick = () => {
             toggleSpinner(true, 'SIGNING OUT');
-            // Optimistic cleanup: hide the menu immediately if on mobile
+            // INSTANT UI RESPONSE: Clear state and go to login
+            currentUser = null;
+            notes = [];
             if (window.innerWidth <= 768) toggleMenu(true);
-            auth.signOut().catch(() => toggleSpinner(false));
-            // Fail-safe dismissal in case of heavy DNS lag
-            setTimeout(() => toggleSpinner(false), 3000);
+            
+            auth.signOut().then(() => {
+                showView('login');
+                toggleSpinner(false);
+                showToast('Signed out successfully', 'success');
+            }).catch(() => {
+                showView('login');
+                toggleSpinner(false);
+            });
         };
     }
 
@@ -456,10 +487,16 @@ function renderDashboard() {
                 <button onclick="openNoteModal()" class="btn-primary"><i class="fas fa-plus"></i> New Note</button>
             </div>
         </header>
-        <div id="notes-list" class="notes-grid view-enter"></div>
+        <div id="notes-list" class="notes-grid view-enter">
+            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-dim);">
+                <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                <p style="font-size: 0.9rem; letter-spacing: 1px;">SYNCING YOUR SANCTUARY...</p>
+            </div>
+        </div>
         <div id="empty-state" class="hidden" style="text-align:center; padding: 4rem; color: var(--text-dim)"><p>Empty notes</p></div>
     `;
-    loadNotes();
+    toggleSpinner(false); // Hide full-screen loader immediately
+    loadNotes(); // Start fetching in background
 }
 
 function renderProfile() {
@@ -661,19 +698,22 @@ function renderFeedback() {
 function renderHelp() {
     viewContainer.innerHTML = `
         <div class="help-container" style="animation: slideUp 0.6s ease-out; max-width: 600px; margin: 0 auto">
-            <h1>Help & Support</h1>
-            <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 2rem; border: 1px solid var(--glass-border); margin-top: 2rem">
-                <h3 style="margin-bottom: 1.5rem">Keyboard Shortcuts</h3>
+            <h1 style="text-align: center; margin-bottom: 2rem">Help & Master Shortcuts</h1>
+            <div style="background: var(--glass-bg); padding: 2.5rem; border-radius: 2rem; border: 1px solid var(--glass-border); box-shadow: var(--shadow-xl)">
+                <h3 style="margin-bottom: 1.5rem; color: var(--primary); letter-spacing: 1px;">KEYBOARD COMMANDS</h3>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid var(--glass-border)">
-                    <span>New Note</span><kbd style="color: var(--primary); font-weight: bold">Alt + N</kbd>
+                    <span>Create New Note</span><kbd style="color: var(--primary); font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">Alt + N</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-top: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem">
-                    <span>Close Modal</span><kbd style="color: var(--primary); font-weight: bold">Esc</kbd>
+                    <span>Close Any Modal</span><kbd style="color: var(--primary); font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">Esc</kbd>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-top: 1rem">
-                    <span>Save Note (Edit Mode)</span><kbd style="color: var(--primary); font-weight: bold">Enter</kbd>
+                    <span>Save Note (Edit Mode)</span><kbd style="color: var(--primary); font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">Ctrl + S</kbd>
                 </div>
             </div>
+            <p style="margin-top: 3rem; color: var(--text-dim); text-align: center; font-size: 0.9rem;">
+                Need more help? Reach out via the <strong>Feedback</strong> tool!
+            </p>
         </div>
     `;
     toggleSpinner(false);
