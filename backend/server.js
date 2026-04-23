@@ -58,6 +58,7 @@ const pool = new Pool({
     // Auto-migrate: Add status column if missing
     try { await pool.query("ALTER TABLE note_collaborators ADD COLUMN status VARCHAR(20) DEFAULT 'accepted';"); } catch (e) {}
     try { await pool.query("UPDATE note_collaborators SET status = 'accepted' WHERE status IS NULL;"); } catch (e) {}
+    try { await pool.query("UPDATE note_collaborators SET user_email = LOWER(user_email);"); } catch (e) {}
     try { await pool.query('ALTER TABLE note_collaborators ADD COLUMN can_edit BOOLEAN DEFAULT TRUE;'); } catch (e) {}
 
     await pool.query(`

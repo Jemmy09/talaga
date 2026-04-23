@@ -151,27 +151,36 @@ function renderInvitations() {
 
     if (invitations.length === 0) {
         container.innerHTML = '';
-        container.classList.add('hidden');
+        container.style.display = 'none';
         return;
     }
 
+    container.style.display = 'block';
     container.classList.remove('hidden');
     container.innerHTML = `
-        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: white;"><i class="fas fa-envelope-open-text" style="color: var(--primary); margin-right: 10px;"></i> Pending Invitations</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 3rem;">
-            ${invitations.map(inv => `
-                <div class="note-card" style="border-color: var(--primary); background: rgba(99, 102, 241, 0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                        <h3 style="font-size: 1rem;">${inv.title}</h3>
-                        <span class="note-category-badge badge-info">Invite</span>
+        <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 20px; padding: 2rem; margin-bottom: 2.5rem; animation: slideDown 0.5s ease-out;">
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: white; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-envelope-open-text" style="color: var(--primary);"></i> 
+                Pending Invitations
+                <span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px;">${invitations.length}</span>
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+                ${invitations.map(inv => `
+                    <div class="note-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); margin: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.1rem; color: white;">${inv.title}</h3>
+                            <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">Invite</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; line-height: 1.5;">
+                            <strong style="color: white">${inv.owner_name}</strong> invited you to collaborate as an <strong style="color: var(--primary)">${inv.can_edit ? 'Editor' : 'Viewer'}</strong>.
+                        </p>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="flex: 2; padding: 0.6rem; font-size: 0.85rem;">Accept</button>
+                            <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="flex: 1; padding: 0.6rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; box-shadow: none; border: 1px solid rgba(244,63,94,0.1);">Decline</button>
+                        </div>
                     </div>
-                    <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">Invited by <strong>${inv.owner_name || 'Collaborator'}</strong> to be an <strong>${inv.can_edit ? 'Editor' : 'Viewer'}</strong>.</p>
-                    <div style="display: flex; gap: 0.75rem;">
-                        <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">Accept</button>
-                        <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: var(--accent); box-shadow: none; border: 1px solid rgba(244,63,94,0.2);">Decline</button>
-                    </div>
-                </div>
-            `).join('')}
+                `).join('')}
+            </div>
         </div>
     `;
 }
