@@ -149,39 +149,48 @@ function updateNotificationBadge() {
 function renderNotificationsView() {
     if (!viewContainer) return;
     viewContainer.innerHTML = `
-        <div class="dashboard-header view-enter">
+        <header class="dashboard-header view-enter">
             <div>
                 <h1 style="font-weight: 800; letter-spacing: -1px; margin-bottom: 0.25rem">Notifications</h1>
-                <p style="color: var(--text-dim); font-size: 0.95rem;">Stay updated with your collaborations</p>
+                <p style="color: var(--text-dim); font-size: 0.95rem;">Hello, ${currentUser?.displayName || 'User'}</p>
+                <p style="color: rgba(168, 85, 247, 0.4); font-size: 0.7rem; margin-top: 2px;">Managing updates for: ${currentUser?.email}</p>
             </div>
-            <button onclick="loadNotifications()" class="btn-primary" style="background: rgba(255,255,255,0.05); color: white; box-shadow: none; border: 1px solid var(--glass-border);"><i class="fas fa-sync-alt"></i> Refresh</button>
-        </div>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="loadNotifications()" class="btn-primary" style="background: rgba(255,255,255,0.05); color: white; box-shadow: none; border: 1px solid var(--glass-border);" title="Refresh Notifications"><i class="fas fa-sync-alt"></i></button>
+            </div>
+        </header>
 
-        <div class="view-enter" style="max-width: 800px; margin: 0 auto;">
+        <div class="view-enter" style="max-width: 900px; margin: 0 auto; padding-bottom: 5rem;">
             <!-- Pending Invitations -->
-            <section style="margin-bottom: 3rem;">
-                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-envelope-open-text" style="color: var(--primary);"></i> 
+            <section style="margin-bottom: 3.5rem;">
+                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; font-weight: 700;">
+                    <i class="fas fa-envelope-open-text" style="color: var(--primary); font-size: 1.25rem"></i> 
                     Pending Invitations
-                    ${notifications.invites.length > 0 ? `<span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px;">${notifications.invites.length}</span>` : ''}
+                    ${notifications.invites.length > 0 ? `<span class="nav-badge" style="position: static; padding: 4px 10px; font-size: 0.75rem">${notifications.invites.length}</span>` : ''}
                 </h2>
                 ${notifications.invites.length === 0 ? `
-                    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 20px; padding: 3rem; text-align: center; color: var(--text-dim);">
-                        No new invitations
+                    <div style="background: var(--glass-bg); border: 1px dashed var(--glass-border); border-radius: 24px; padding: 4rem 2rem; text-align: center; color: var(--text-dim);">
+                        <i class="fas fa-mailbox" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.2"></i>
+                        <p>Your inbox is clear! No pending invitations.</p>
                     </div>
                 ` : `
-                    <div style="display: grid; gap: 1rem;">
+                    <div style="display: grid; gap: 1.25rem;">
                         ${notifications.invites.map(inv => `
-                            <div class="note-card" style="margin: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; padding: 1.5rem;">
-                                <div>
-                                    <h3 style="font-size: 1rem; color: white; margin-bottom: 0.25rem;">${inv.title}</h3>
-                                    <p style="font-size: 0.85rem; color: var(--text-dim);">
-                                        <strong style="color: white">${inv.owner_name}</strong> invited you as an <strong style="color: var(--primary)">${inv.can_edit ? 'Editor' : 'Viewer'}</strong>
-                                    </p>
+                            <div class="note-card" style="margin: 0; background: var(--bg-surface); border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; padding: 1.75rem; box-shadow: var(--shadow-lg);">
+                                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                                    <div style="width: 48px; height: 48px; background: rgba(99, 102, 241, 0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem;">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                    <div>
+                                        <h3 style="font-size: 1.1rem; color: white; margin-bottom: 0.35rem;">${inv.title}</h3>
+                                        <p style="font-size: 0.9rem; color: var(--text-dim);">
+                                            <strong style="color: white">${inv.owner_name}</strong> invited you as an <strong style="color: var(--primary)">${inv.can_edit ? 'Editor' : 'Viewer'}</strong>
+                                        </p>
+                                    </div>
                                 </div>
-                                <div style="display: flex; gap: 0.75rem;">
-                                    <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">Accept</button>
-                                    <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; box-shadow: none; border: 1px solid rgba(244,63,94,0.1);">Decline</button>
+                                <div style="display: flex; gap: 0.85rem;">
+                                    <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.9rem;">Accept</button>
+                                    <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; background: rgba(244, 63, 94, 0.05); color: var(--accent); box-shadow: none; border: 1px solid rgba(244,63,94,0.1);">Decline</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -191,30 +200,34 @@ function renderNotificationsView() {
 
             <!-- Activity Logs -->
             <section>
-                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-history" style="color: var(--secondary);"></i> 
+                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; font-weight: 700;">
+                    <i class="fas fa-bolt" style="color: var(--secondary); font-size: 1.25rem"></i> 
                     Recent Activity
                 </h2>
                 ${notifications.activities.length === 0 ? `
-                    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 20px; padding: 3rem; text-align: center; color: var(--text-dim);">
-                        No recent activity on your notes
+                    <div style="background: var(--glass-bg); border: 1px dashed var(--glass-border); border-radius: 24px; padding: 4rem 2rem; text-align: center; color: var(--text-dim);">
+                        <i class="fas fa-stream" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.2"></i>
+                        <p>No activity recorded on your notes yet.</p>
                     </div>
                 ` : `
-                    <div style="display: grid; gap: 0.75rem;">
+                    <div style="display: grid; gap: 0.85rem;">
                         ${notifications.activities.map(act => {
                             const isRead = localStorage.getItem(`read_act_${act.id}`);
                             return `
-                                <div onclick="markActivityRead('${act.id}')" style="background: ${isRead ? 'rgba(255,255,255,0.02)' : 'rgba(99, 102, 241, 0.05)'}; border: 1px solid ${isRead ? 'var(--glass-border)' : 'rgba(99, 102, 241, 0.2)'}; border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.25rem; cursor: pointer;">
-                                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                <div onclick="markActivityRead('${act.id}')" style="background: ${isRead ? 'rgba(255,255,255,0.01)' : 'rgba(168, 85, 247, 0.03)'}; border: 1px solid ${isRead ? 'var(--glass-border)' : 'rgba(168, 85, 247, 0.15)'}; border-radius: 16px; padding: 1.25rem 1.75rem; display: flex; align-items: center; gap: 1.5rem; cursor: pointer; transition: var(--transition); ${!isRead ? 'box-shadow: 0 4px 20px rgba(168,85,247,0.05);' : ''}">
+                                    <div style="width: 44px; height: 44px; background: ${isRead ? 'rgba(255,255,255,0.03)' : 'rgba(168, 85, 247, 0.1)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--secondary); font-size: 1rem;">
                                         <i class="fas fa-edit"></i>
                                     </div>
                                     <div style="flex: 1">
-                                        <p style="font-size: 0.9rem; color: white; margin-bottom: 0.25rem;">
-                                            <strong style="color: var(--primary)">${act.user_name}</strong> ${act.action} in <strong>"${act.note_title}"</strong>
+                                        <p style="font-size: 0.95rem; color: ${isRead ? 'var(--text-muted)' : 'white'}; margin-bottom: 0.25rem; line-height: 1.4;">
+                                            <strong style="color: var(--secondary)">${act.user_name}</strong> ${act.action} in <strong>"${act.note_title}"</strong>
                                         </p>
-                                        <p style="font-size: 0.75rem; color: var(--text-dim);">${new Date(act.time).toLocaleString()}</p>
+                                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim);">
+                                            <i class="far fa-clock"></i>
+                                            <span>${new Date(act.time).toLocaleString()}</span>
+                                        </div>
                                     </div>
-                                    ${!isRead ? `<div style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%;"></div>` : ''}
+                                    ${!isRead ? `<div style="width: 10px; height: 10px; background: var(--secondary); border-radius: 50%; box-shadow: 0 0 10px var(--secondary);"></div>` : ''}
                                 </div>
                             `;
                         }).join('')}
