@@ -67,6 +67,8 @@ function initApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedToken = urlParams.get('note');
     if (sharedToken) {
+        // Clear query param without refreshing to keep URL clean
+        window.history.replaceState({}, document.title, window.location.pathname);
         loadPublicNote(sharedToken);
     } else {
         checkUserStatus();
@@ -783,27 +785,30 @@ async function openSharingModal(id) {
 
                 <div style="border-top: 1px solid var(--glass-border); padding-top: 1.5rem; margin-top: 2rem">
                     <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px">General access</h3>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--glass-border)">
-                        <div style="display: flex; align-items: center; gap: 1rem">
-                            <div style="width: 40px; height: 40px; background: ${config.access_type === 'public' ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${config.access_type === 'public' ? '#10b981' : '#f43f5e'}">
-                                <i class="fas ${config.access_type === 'public' ? 'fa-globe' : 'fa-lock'}"></i>
-                            </div>
-                            <div>
-                                <select id="general-access-select" style="background: transparent; border: none; color: white; font-weight: 600; font-size: 0.9rem; padding: 0; width: auto; cursor: pointer;">
-                                    <option value="restricted" ${config.access_type === 'restricted' ? 'selected' : ''}>Restricted</option>
-                                    <option value="public" ${config.access_type === 'public' ? 'selected' : ''}>Anyone with the link</option>
-                                </select>
-                                <div style="font-size: 0.75rem; color: var(--text-dim)">
-                                    ${config.access_type === 'public' ? 'Anyone on the internet with this link can view' : 'Only people added can open with this link'}
+                    <div style="background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--glass-border)">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem">
+                            <div style="display: flex; align-items: center; gap: 1rem">
+                                <div style="width: 40px; height: 40px; background: ${config.access_type === 'public' ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${config.access_type === 'public' ? '#10b981' : '#f43f5e'}">
+                                    <i class="fas ${config.access_type === 'public' ? 'fa-globe' : 'fa-lock'}"></i>
+                                </div>
+                                <div>
+                                    <select id="general-access-select" style="background: transparent; border: none; color: white; font-weight: 600; font-size: 0.9rem; padding: 0; width: auto; cursor: pointer;">
+                                        <option value="restricted" ${config.access_type === 'restricted' ? 'selected' : ''}>Restricted</option>
+                                        <option value="public" ${config.access_type === 'public' ? 'selected' : ''}>Anyone with the link</option>
+                                    </select>
+                                    <div style="font-size: 0.75rem; color: var(--text-dim)">
+                                        ${config.access_type === 'public' ? 'Anyone with this link can access' : 'Only people invited can access'}
+                                    </div>
                                 </div>
                             </div>
+                            ${config.access_type === 'public' ? `
+                                <select id="public-role-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; padding: 0.4rem 0.6rem; font-size: 0.8rem">
+                                    <option value="viewer" ${config.public_role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                    <option value="editor" ${config.public_role === 'editor' ? 'selected' : ''}>Editor</option>
+                                </select>
+                            ` : ''}
                         </div>
-                        ${config.access_type === 'public' ? `
-                            <select id="public-role-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem">
-                                <option value="viewer" ${config.public_role === 'viewer' ? 'selected' : ''}>Viewer</option>
-                                <option value="editor" ${config.public_role === 'editor' ? 'selected' : ''}>Editor</option>
-                            </select>
-                        ` : ''}
+                        <button id="save-access-btn" class="btn-primary" style="width: 100%; padding: 0.6rem; font-size: 0.85rem; background: var(--primary-dark); border-radius: 8px;">Save Access Settings</button>
                     </div>
                 </div>
 
@@ -822,15 +827,17 @@ async function openSharingModal(id) {
             if (email) shareWithUser(id, email, canEdit);
         };
 
-        document.getElementById('general-access-select').onchange = (e) => {
-            updateGeneralAccess(id, e.target.value, config.public_role);
+        document.getElementById('save-access-btn').onclick = () => {
+            const accessType = document.getElementById('general-access-select').value;
+            const publicRole = document.getElementById('public-role-select')?.value || config.public_role;
+            updateGeneralAccess(id, accessType, publicRole);
         };
 
-        if (document.getElementById('public-role-select')) {
-            document.getElementById('public-role-select').onchange = (e) => {
-                updateGeneralAccess(id, config.access_type, e.target.value);
-            };
-        }
+        document.getElementById('general-access-select').onchange = (e) => {
+            // Re-render immediately to show/hide public-role-select
+            config.access_type = e.target.value;
+            renderSharingView();
+        };
 
         document.getElementById('copy-link-btn').onclick = () => {
             if (config.access_type === 'restricted') {

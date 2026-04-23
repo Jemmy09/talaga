@@ -168,16 +168,33 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
 app.get('/api/public/notes/:token', async (req, res) => {
   const { token } = req.params;
   try {
+    // Query using JSONB arrow operator for robustness
     const result = await pool.query(
-      "SELECT * FROM notes WHERE sharing_config->>'share_token' = $1 AND sharing_config->>'access_type' = 'public'",
+      "SELECT * FROM notes WHERE sharing_config->>'share_token' = $1",
       [token]
     );
-    if (result.rowCount === 0) return res.status(404).json({ error: 'Note not found or private' });
+    
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Link invalid or note deleted' });
     
     const note = result.rows[0];
-    res.json({ ...note, is_owner: false, is_public: true, can_edit: note.sharing_config.public_role === 'editor' });
+    const config = note.sharing_config || {};
+    
+    // Check if it's actually public
+    if (config.access_type !== 'public') {
+      return res.status(403).json({ error: 'This link is currently private' });
+    }
+    
+    // Public notes are never "owned" by the viewer
+    // But they can have 'editor' role if public_role is 'editor'
+    res.json({ 
+      ...note, 
+      is_owner: false, 
+      is_public: true, 
+      can_edit: config.public_role === 'editor' 
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Database error' });
+    console.error('Public Fetch Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
