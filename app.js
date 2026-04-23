@@ -391,11 +391,15 @@ async function loadNotes() {
         document.getElementById('empty-state').classList.add('hidden');
         list.innerHTML = notes.map(n => `
             <div class="note-card" onclick="openNoteModal('${n.id}')">
-                <div class="note-card-header">
-                    <h3>${n.title || 'Untitled'}</h3>
+                ${n.image_url ? `<div class="note-card-image" style="background-image: url('${n.image_url}'); height: 120px; border-radius: 12px 12px 0 0; background-size: cover; background-position: center;"></div>` : ''}
+                <div class="note-card-header" style="${n.image_url ? 'padding-top: 1rem;' : ''}">
+                    <div style="display: flex; align-items: center; gap: 0.5rem">
+                        <h3>${n.title || 'Untitled'}</h3>
+                        ${!n.is_owner ? '<i class="fas fa-user-friends" style="color: var(--primary); font-size: 0.8rem;" title="Shared with you"></i>' : ''}
+                    </div>
                     <button onclick="event.stopPropagation(); deleteNote('${n.id}')" class="delete-btn"><i class="fas fa-trash"></i></button>
                 </div>
-                <p>${(n.content || '').substring(0, 100)}...</p>
+                <p>${(n.content || '').substring(0, 80)}...</p>
                 <div class="note-card-footer"><span>${new Date(n.updated_at || n.created_at).toLocaleDateString()}</span></div>
             </div>`).join('');
     }
@@ -413,16 +417,25 @@ function openNoteModal(noteId = null) {
             <div style="animation: slideUp 0.4s ease-out">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1.5rem">
                     <div style="flex: 1">
-                        <span style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem">${note?.category || 'General Note'}</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
+                            <span style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${note?.category || 'General Note'}</span>
+                            ${!note?.is_owner ? '<span style="display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Shared Note</span>' : ''}
+                        </div>
                         <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.2">${note ? note.title : 'New Note'}</h1>
                         <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem">Last updated: ${new Date(note ? (note.updated_at || note.created_at) : Date.now()).toLocaleString()}</p>
                     </div>
                     <div style="display: flex; gap: 0.75rem">
+                        ${note?.is_owner ? `<button id="share-note-btn" class="delete-btn" title="Share Note" style="color: #10b981; background: rgba(16, 185, 129, 0.05)"><i class="fas fa-share-alt"></i></button>` : ''}
                         <button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>
                         <button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>
                         <button onclick="closeModal()" class="delete-btn" title="Close"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
+                ${note?.image_url ? `
+                    <div style="margin-bottom: 2rem; border-radius: 16px; overflow: hidden; max-height: 400px; border: 1px solid var(--glass-border)">
+                        <img src="${note.image_url}" style="width: 100%; height: auto; display: block;">
+                    </div>
+                ` : ''}
                 <div style="font-size: 1.25rem; line-height: 2; color: #e2e8f0; white-space: pre-wrap; min-height: 300px; padding: 0.5rem 0">
                     ${note ? note.content : 'No content provided.'}
                 </div>
@@ -433,6 +446,7 @@ function openNoteModal(noteId = null) {
         `;
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
         document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
+        if (note?.is_owner) document.getElementById('share-note-btn').onclick = () => shareNote(noteId);
     };
 
     const renderEditView = () => {
@@ -447,8 +461,8 @@ function openNoteModal(noteId = null) {
                 </div>
                 <input id="note-title-input" class="modal-input" placeholder="title" value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
                 
-                <div style="margin-bottom: 1.5rem">
-                    <select id="note-category-input" class="modal-input" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; font-weight: 600; color: var(--primary)">
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                    <select id="note-category-input" class="modal-input" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 0;">
                         <option value="info" ${note?.category === 'info' ? 'selected' : ''}>General Info</option>
                         <option value="todo" ${note?.category === 'todo' ? 'selected' : ''}>To-Do List</option>
                         <option value="account" ${note?.category === 'account' ? 'selected' : ''}>Accounts</option>
@@ -457,6 +471,10 @@ function openNoteModal(noteId = null) {
                         <option value="personal" ${note?.category === 'personal' ? 'selected' : ''}>Personal</option>
                         <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
                     </select>
+                    <div style="flex: 1; position: relative;">
+                        <i class="fas fa-image" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-dim);"></i>
+                        <input id="note-image-input" class="modal-input" placeholder="Image URL (optional)" value="${note?.image_url || ''}" style="margin-bottom: 0; padding-left: 2.8rem; font-size: 0.85rem; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px;">
+                    </div>
                 </div>
 
                 <textarea id="note-content-input" class="modal-input" placeholder="Any thoughts" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
@@ -473,11 +491,12 @@ function openNoteModal(noteId = null) {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
             const category = document.getElementById('note-category-input').value;
+            const image_url = document.getElementById('note-image-input').value.trim();
             
             if (!title && !content) return;
 
             // Professional check: Only sync if changes were actually made
-            if (note && note.title === title && note.content === content && (note.category || 'info') === category) {
+            if (note && note.title === title && note.content === content && (note.category || 'info') === category && note.image_url === image_url) {
                 closeModal();
                 return;
             }
@@ -490,7 +509,7 @@ function openNoteModal(noteId = null) {
                 const res = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ title, content, category })
+                    body: JSON.stringify({ title, content, category, image_url })
                 });
                 
                 if (res.ok) { 
@@ -521,6 +540,31 @@ function openNoteModal(noteId = null) {
 function closeModal() {
     const modal = document.getElementById('note-modal');
     if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
+
+async function shareNote(id) {
+    const email = prompt("Enter the email of the person you want to share this note with:");
+    if (!email || !email.includes('@')) return;
+
+    toggleSpinner(true, 'SHARING');
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ email })
+        });
+        if (res.ok) {
+            showToast(`Note shared with ${email}`, "success");
+        } else {
+            const err = await res.json();
+            showToast(err.error || "Failed to share note", "error");
+        }
+    } catch (e) {
+        showToast("Network error", "error");
+    } finally {
+        toggleSpinner(false);
+    }
 }
 
 async function deleteNote(id) {

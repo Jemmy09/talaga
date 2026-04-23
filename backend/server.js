@@ -28,6 +28,7 @@ const pool = new Pool({
           title VARCHAR(255) NOT NULL,
           description TEXT,
           content TEXT,
+          image_url TEXT,
           category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -38,7 +39,16 @@ const pool = new Pool({
     try { await pool.query('ALTER TABLE notes ADD COLUMN description TEXT;'); } catch (e) { /* Ignore if exists */ }
     try { await pool.query('ALTER TABLE notes ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;'); } catch (e) { /* Ignore if exists */ }
     try { await pool.query('ALTER TABLE notes ADD COLUMN category VARCHAR(50) DEFAULT \'info\';'); } catch (e) { /* Ignore if exists */ }
+    try { await pool.query('ALTER TABLE notes ADD COLUMN image_url TEXT;'); } catch (e) { /* Ignore if exists */ }
     
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS note_collaborators (
+          note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,
+          user_email VARCHAR(255) NOT NULL,
+          PRIMARY KEY (note_id, user_email)
+      );
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS feedback (
           id SERIAL PRIMARY KEY,
@@ -117,12 +127,17 @@ app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
     }
 });
 
-// 1. Get all notes for the authenticated user
+// 1. Get all notes for the authenticated user (including shared ones)
 app.get('/api/notes', authenticateUser, async (req, res) => {
   try {
+    const userEmail = req.user.email;
     const result = await pool.query(
-      'SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.user.uid]
+      `SELECT n.*, (n.user_id = $1) as is_owner 
+       FROM notes n
+       LEFT JOIN note_collaborators c ON n.id = c.note_id
+       WHERE n.user_id = $1 OR c.user_email = $2
+       ORDER BY n.created_at DESC`,
+      [req.user.uid, userEmail]
     );
     res.json(result.rows);
   } catch (err) {
@@ -133,13 +148,13 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
 
 // 2. Create a new note
 app.post('/api/notes', authenticateUser, async (req, res) => {
-  const { title, description, content, category } = req.body;
+  const { title, description, content, category, image_url } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
     const result = await pool.query(
-      'INSERT INTO notes (user_id, title, description, content, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [req.user.uid, title || null, description || null, content || null, category || 'info']
+      'INSERT INTO notes (user_id, title, description, content, category, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [req.user.uid, title || null, description || null, content || null, category || 'info', image_url || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -151,17 +166,27 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
 // 3. Update an existing note
 app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { title, description, content, category } = req.body;
+  const { title, description, content, category, image_url } = req.body;
+  const userEmail = req.user.email;
   
   try {
+    // Check if user is owner or collaborator
+    const accessCheck = await pool.query(
+      `SELECT n.user_id FROM notes n
+       LEFT JOIN note_collaborators c ON n.id = c.note_id
+       WHERE n.id = $1 AND (n.user_id = $2 OR c.user_email = $3)`,
+      [id, req.user.uid, userEmail]
+    );
+
+    if (accessCheck.rowCount === 0) {
+      return res.status(404).json({ error: 'Note not found or unauthorized' });
+    }
+
     const result = await pool.query(
-      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND user_id = $6 RETURNING *',
-      [title || null, description || null, content || null, category || 'info', id, req.user.uid]
+      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, image_url = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *',
+      [title || null, description || null, content || null, category || 'info', image_url || null, id]
     );
     
-    if (result.rowCount === 0) {
-       return res.status(404).json({ error: 'Note not found or unauthorized' });
-    }
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Update Error:', err);
@@ -169,7 +194,7 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// 4. Delete a note
+// 4. Delete a note (Only owner)
 app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
   
@@ -180,7 +205,7 @@ app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
     );
     
     if (result.rowCount === 0) {
-       return res.status(404).json({ error: 'Note not found or unauthorized' });
+       return res.status(404).json({ error: 'Note not found or you are not the owner' });
     }
     res.json({ message: 'Note deleted successfully' });
   } catch (err) {
@@ -189,18 +214,43 @@ app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// 5. Delete ALL notes (Wipe Data)
-app.delete('/api/notes', authenticateUser, async (req, res) => {
-    try {
-      await pool.query('DELETE FROM notes WHERE user_id = $1', [req.user.uid]);
-      res.json({ message: 'All data cleared' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Internal Server Error' });
+// 5. Share a note
+app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  const { email } = req.body;
+  
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    // Only owner can share
+    const ownerCheck = await pool.query('SELECT user_id FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
+    if (ownerCheck.rowCount === 0) {
+      return res.status(403).json({ error: 'Only the owner can share this note' });
     }
+
+    await pool.query(
+      'INSERT INTO note_collaborators (note_id, user_email) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [id, email]
+    );
+    res.json({ message: `Note shared with ${email}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-// 6. Submit feedback
+// 6. Get collaborators for a note
+app.get('/api/notes/:id/collaborators', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT user_email FROM note_collaborators WHERE note_id = $1', [id]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 7. Submit feedback
 app.post('/api/feedback', authenticateUser, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Feedback text is required' });
