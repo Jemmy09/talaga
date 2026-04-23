@@ -367,19 +367,22 @@ app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
       config.share_token = crypto.randomBytes(16).toString('hex');
     }
 
+    console.log(`📡 Updating access for note ${noteId} to ${config.access_type}`);
     const updateRes = await pool.query(
       'UPDATE notes SET sharing_config = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING sharing_config', 
-      [JSON.stringify(config), noteId]
+      [config, noteId] // JSONB columns can take objects directly in pg driver
     );
     
-    const newConfig = updateRes.rows[0].sharing_config;
+    const newConfig = updateRes.rows[0]?.sharing_config;
+    if (!newConfig) throw new Error("Update returned no data");
+
     await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', 
-      [noteId, userName, `Changed access to ${newConfig.access_type} (${newConfig.public_role})`]);
+      [noteId, userName, `Changed access to ${newConfig.access_type} (${newConfig.public_role || 'viewer'})`]);
 
     res.json(newConfig);
   } catch (err) {
-    console.error('❌ Access Update Error:', err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Access Update Error:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 });
 

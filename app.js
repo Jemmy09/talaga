@@ -1080,12 +1080,18 @@ async function updateGeneralAccess(id, access_type, public_role) {
             openSharingModal(id);
             renderNotes();
         } else {
-            const err = await res.json();
-            showToast(err.error || "Update failed", "error");
+            let errorMsg = "Update failed";
+            try {
+                const err = await res.json();
+                errorMsg = err.error || err.message || errorMsg;
+            } catch (jsonErr) {
+                errorMsg = `Server error (${res.status})`;
+            }
+            showToast(errorMsg, "error");
         }
     } catch (e) {
         console.error("General Access Error:", e);
-        showToast("Network Error: Could not reach server", "error");
+        showToast("Connection failed. Please check your internet.", "error");
     } finally {
         toggleSpinner(false);
     }
