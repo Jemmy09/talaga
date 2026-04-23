@@ -63,16 +63,24 @@ function initApp() {
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
     let isInitialLoad = true;
-    // Handle shared note links
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedToken = urlParams.get('note');
-    if (sharedToken) {
-        // Clear query param without refreshing to keep URL clean
-        window.history.replaceState({}, document.title, window.location.pathname);
-        loadPublicNote(sharedToken);
-    } else {
-        checkUserStatus();
-    }
+    
+    // Always initialize authentication listener
+    auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedToken = urlParams.get('note');
+
+        if (sharedToken && isInitialLoad) {
+            // Clean URL and load public note
+            window.history.replaceState({}, document.title, window.location.pathname);
+            await loadPublicNote(sharedToken);
+        } else if (isInitialLoad) {
+            // Normal dashboard flow
+            checkUserStatus();
+        }
+        
+        isInitialLoad = false;
+    });
 }
 
 async function loadPublicNote(token) {
@@ -89,7 +97,8 @@ async function loadPublicNote(token) {
         showToast("Viewing shared note", "info");
     } catch (e) {
         showToast(e.message, "error");
-        checkUserStatus();
+        if (!currentUser) showView('login');
+        else navigate('dashboard');
     } finally {
         toggleSpinner(false);
     }
@@ -263,32 +272,31 @@ async function respondToInvite(id, action) {
     }
 }
 
-function checkUserStatus() {
-    auth.onAuthStateChanged(async (user) => {
-        currentUser = user;
-        if (user) {
-            const hash = window.location.hash.replace('#', '') || 'dashboard';
-            await showView(hash);
-            await fetchAllNotes();
-            await loadNotifications();
-            if (hash === 'dashboard') loadNotes();
-        } else {
-            showView('login');
-        }
-        isInitialLoad = false;
-        toggleSpinner(false);
-    });
+async function checkUserStatus() {
+    if (currentUser) {
+        const hash = window.location.hash.replace('#', '') || 'dashboard';
+        await showView(hash);
+        await fetchAllNotes();
+        await loadNotifications();
+        if (hash === 'dashboard') loadNotes();
+    } else {
+        showView('login');
+    }
+    toggleSpinner(false);
 
-    // Keyboard Shortcuts (Functional & Responsive)
-    document.addEventListener('keydown', (e) => {
-        if (e.altKey && e.code === 'KeyN') {
-            e.preventDefault();
-            if (currentUser && currentView !== 'login') openNoteModal();
-        }
-        if (e.key === 'Escape') {
-            closeModal();
-        }
-    });
+    // Keyboard Shortcuts (Functional & Responsive) - Only add once
+    if (!window.shortcutsInitialized) {
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && e.code === 'KeyN') {
+                e.preventDefault();
+                if (currentUser && currentView !== 'login') openNoteModal();
+            }
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        window.shortcutsInitialized = true;
+    }
 
     window.onhashchange = () => {
         const view = window.location.hash.replace('#', '') || (currentUser ? 'dashboard' : 'login');
