@@ -106,83 +106,129 @@ async function loadDashboard() {
     }
 }
 
-// Start polling for invitations every 30 seconds
+let notifications = { invites: [], activities: [] };
+// Start polling for notifications every 30 seconds
 setInterval(() => {
-    if (currentUser && currentView === 'dashboard') loadInvitations();
+    if (currentUser) loadNotifications();
 }, 30000);
 
-let invitations = [];
-async function loadInvitations() {
+async function loadNotifications() {
     try {
         const token = await currentUser.getIdToken();
-        const res = await fetch(`${API_BASE_URL}/api/invitations`, {
+        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error();
-        invitations = await res.json();
-        updateInvitationBadge();
-        renderInvitations();
+        notifications = await res.json();
+        updateNotificationBadge();
+        if (currentView === 'notifications') renderNotificationsView();
     } catch (e) {
-        console.warn("Invitation fetch failed");
+        console.warn("Notification fetch failed");
     }
 }
 
-function updateInvitationBadge() {
-    const navItem = document.querySelector('[onclick="navigate(\'dashboard\')"]');
+function updateNotificationBadge() {
+    const navItem = document.querySelector('[data-view="notifications"]');
     if (!navItem) return;
 
     let badge = navItem.querySelector('.nav-badge');
-    if (invitations.length > 0) {
+    const count = notifications.invites.length + notifications.activities.filter(a => !localStorage.getItem(`read_act_${a.id}`)).length;
+    
+    if (count > 0) {
         if (!badge) {
             badge = document.createElement('span');
             badge.className = 'nav-badge';
             badge.style.cssText = 'background: var(--accent); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; margin-left: auto; font-weight: 800;';
             navItem.appendChild(badge);
         }
-        badge.innerText = invitations.length;
+        badge.innerText = count;
     } else if (badge) {
         badge.remove();
     }
 }
 
-function renderInvitations() {
-    const container = document.getElementById('invitations-container');
-    if (!container) return;
-
-    if (invitations.length === 0) {
-        container.innerHTML = '';
-        container.style.display = 'none';
-        return;
-    }
-
-    container.style.display = 'block';
-    container.classList.remove('hidden');
-    container.innerHTML = `
-        <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 20px; padding: 2rem; margin-bottom: 2.5rem; animation: slideDown 0.5s ease-out;">
-            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: white; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-envelope-open-text" style="color: var(--primary);"></i> 
-                Pending Invitations
-                <span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px;">${invitations.length}</span>
-            </h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
-                ${invitations.map(inv => `
-                    <div class="note-card" style="background: var(--glass-bg); border: 1px solid var(--glass-border); margin: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                            <h3 style="font-size: 1.1rem; color: white;">${inv.title}</h3>
-                            <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">Invite</span>
-                        </div>
-                        <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; line-height: 1.5;">
-                            <strong style="color: white">${inv.owner_name}</strong> invited you to collaborate as an <strong style="color: var(--primary)">${inv.can_edit ? 'Editor' : 'Viewer'}</strong>.
-                        </p>
-                        <div style="display: flex; gap: 0.75rem;">
-                            <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="flex: 2; padding: 0.6rem; font-size: 0.85rem;">Accept</button>
-                            <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="flex: 1; padding: 0.6rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; box-shadow: none; border: 1px solid rgba(244,63,94,0.1);">Decline</button>
-                        </div>
-                    </div>
-                `).join('')}
+function renderNotificationsView() {
+    const content = document.getElementById('main-content');
+    content.innerHTML = `
+        <div class="dashboard-header view-enter">
+            <div>
+                <h1 style="font-weight: 800; letter-spacing: -1px; margin-bottom: 0.25rem">Notifications</h1>
+                <p style="color: var(--text-dim); font-size: 0.95rem;">Stay updated with your collaborations</p>
             </div>
+            <button onclick="loadNotifications()" class="btn-primary" style="background: rgba(255,255,255,0.05); color: white; box-shadow: none; border: 1px solid var(--glass-border);"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+
+        <div class="view-enter" style="max-width: 800px; margin: 0 auto;">
+            <!-- Pending Invitations -->
+            <section style="margin-bottom: 3rem;">
+                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-envelope-open-text" style="color: var(--primary);"></i> 
+                    Pending Invitations
+                    ${notifications.invites.length > 0 ? `<span style="background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px;">${notifications.invites.length}</span>` : ''}
+                </h2>
+                ${notifications.invites.length === 0 ? `
+                    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 20px; padding: 3rem; text-align: center; color: var(--text-dim);">
+                        No new invitations
+                    </div>
+                ` : `
+                    <div style="display: grid; gap: 1rem;">
+                        ${notifications.invites.map(inv => `
+                            <div class="note-card" style="margin: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; padding: 1.5rem;">
+                                <div>
+                                    <h3 style="font-size: 1rem; color: white; margin-bottom: 0.25rem;">${inv.title}</h3>
+                                    <p style="font-size: 0.85rem; color: var(--text-dim);">
+                                        <strong style="color: white">${inv.owner_name}</strong> invited you as an <strong style="color: var(--primary)">${inv.can_edit ? 'Editor' : 'Viewer'}</strong>
+                                    </p>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem;">
+                                    <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">Accept</button>
+                                    <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; box-shadow: none; border: 1px solid rgba(244,63,94,0.1);">Decline</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </section>
+
+            <!-- Activity Logs -->
+            <section>
+                <h2 style="font-size: 1.1rem; color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history" style="color: var(--secondary);"></i> 
+                    Recent Activity
+                </h2>
+                ${notifications.activities.length === 0 ? `
+                    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 20px; padding: 3rem; text-align: center; color: var(--text-dim);">
+                        No recent activity on your notes
+                    </div>
+                ` : `
+                    <div style="display: grid; gap: 0.75rem;">
+                        ${notifications.activities.map(act => {
+                            const isRead = localStorage.getItem(`read_act_${act.id}`);
+                            return `
+                                <div onclick="markActivityRead('${act.id}')" style="background: ${isRead ? 'rgba(255,255,255,0.02)' : 'rgba(99, 102, 241, 0.05)'}; border: 1px solid ${isRead ? 'var(--glass-border)' : 'rgba(99, 102, 241, 0.2)'}; border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.25rem; cursor: pointer;">
+                                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                        <i class="fas fa-edit"></i>
+                                    </div>
+                                    <div style="flex: 1">
+                                        <p style="font-size: 0.9rem; color: white; margin-bottom: 0.25rem;">
+                                            <strong style="color: var(--primary)">${act.user_name}</strong> ${act.action} in <strong>"${act.note_title}"</strong>
+                                        </p>
+                                        <p style="font-size: 0.75rem; color: var(--text-dim);">${new Date(act.time).toLocaleString()}</p>
+                                    </div>
+                                    ${!isRead ? `<div style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%;"></div>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `}
+            </section>
         </div>
     `;
+}
+
+function markActivityRead(id) {
+    localStorage.setItem(`read_act_${id}`, 'true');
+    renderNotificationsView();
+    updateNotificationBadge();
 }
 
 async function respondToInvite(id, action) {
@@ -211,6 +257,7 @@ function checkUserStatus() {
             const hash = window.location.hash.replace('#', '') || 'dashboard';
             await showView(hash);
             await fetchAllNotes();
+            await loadNotifications();
             if (hash === 'dashboard') loadNotes();
         } else {
             showView('login');
@@ -301,6 +348,7 @@ async function showView(viewName) {
     try {
         switch (viewName) {
             case 'dashboard': renderDashboard(); break;
+            case 'notifications': renderNotificationsView(); break;
             case 'profile': renderProfile(); break;
             case 'settings': renderSettings(); break;
             case 'about': renderAbout(); break;
@@ -340,15 +388,20 @@ function renderLogin() {
 function renderDashboard() {
     if (mainNav) mainNav.classList.remove('hidden');
     viewContainer.innerHTML = `
-        <header class="dashboard-header">
-            <div><h1>Digital Workspace</h1><p>Hello, ${currentUser?.displayName || 'User'}</p></div>
-            <button id="add-note-btn" class="btn-primary"><i class="fas fa-plus"></i> New Note</button>
+        <header class="dashboard-header view-enter">
+            <div>
+                <h1 style="font-weight: 800; letter-spacing: -1px; margin-bottom: 0.25rem">Digital Workspace</h1>
+                <p style="color: var(--text-dim); font-size: 0.95rem;">Hello, ${currentUser?.displayName || 'User'}</p>
+                <p style="color: rgba(99, 102, 241, 0.4); font-size: 0.7rem; margin-top: 2px;">Logged in as: ${currentUser?.email}</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="loadDashboard()" class="btn-primary" style="background: rgba(255,255,255,0.05); color: white; box-shadow: none; border: 1px solid var(--glass-border);" title="Refresh Dashboard"><i class="fas fa-sync-alt"></i></button>
+                <button onclick="openNoteModal()" class="btn-primary"><i class="fas fa-plus"></i> New Note</button>
+            </div>
         </header>
-        <div id="notes-list" class="notes-grid"></div>
+        <div id="notes-list" class="notes-grid view-enter"></div>
         <div id="empty-state" class="hidden" style="text-align:center; padding: 4rem; color: var(--text-dim)"><p>Empty notes</p></div>
     `;
-    document.getElementById('add-note-btn').onclick = () => openNoteModal();
-    toggleSpinner(false);
     loadNotes();
 }
 

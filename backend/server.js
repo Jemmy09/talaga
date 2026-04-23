@@ -149,19 +149,35 @@ app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
   }
 });
 
-// 1. Get invitations for the user
-app.get('/api/invitations', authenticateUser, async (req, res) => {
+// 1.4 Get notifications (invitations + collaborator edits)
+app.get('/api/notifications', authenticateUser, async (req, res) => {
   const userEmail = req.user.email.toLowerCase();
   try {
-    const result = await pool.query(
-      `SELECT n.id, n.title, n.owner_name, c.can_edit 
+    // 1. Pending Invitations
+    const invites = await pool.query(
+      `SELECT n.id, n.title, n.owner_name, c.can_edit, 'invite' as type, n.created_at as time
        FROM notes n
        JOIN note_collaborators c ON n.id = c.note_id
        WHERE LOWER(c.user_email) = $1 AND c.status = 'pending'`,
       [userEmail]
     );
-    res.json(result.rows);
+
+    // 2. Collaborator Activity on User's Notes (Last 20 edits by others)
+    const activities = await pool.query(
+      `SELECT h.*, n.title as note_title, 'activity' as type, h.created_at as time
+       FROM note_history h
+       JOIN notes n ON h.note_id = n.id
+       WHERE n.user_id = $1 AND h.user_name != $2
+       ORDER BY h.created_at DESC LIMIT 20`,
+      [req.user.uid, req.user.name || req.user.email]
+    );
+
+    res.json({
+      invites: invites.rows,
+      activities: activities.rows
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
