@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talaga | Premium Personal Notes</title>
+    <title>Talaga</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    
+
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Talaga is a modern, secure, and elegantly designed personal dashboard for organizing notes, to-do lists, and accounts.">
+    <meta name="description"
+        content="Talaga is a modern, secure, and elegantly designed personal dashboard for organizing notes, to-do lists, and accounts.">
     <meta name="keywords" content="notes, productivity, personal organizer, talaga, secure notes">
     <meta name="author" content="Jemmy Francisco">
-    
+
     <!-- Social Meta Tags -->
     <meta property="og:title" content="Talaga - Premium Personal Space">
     <meta property="og:description" content="Organize your thoughts with the most elegant note-taking app.">
     <meta property="og:image" content="images/logo.png">
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Stylesheet -->
     <link rel="stylesheet" href="styles.css">
 
@@ -32,6 +34,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 </head>
+
 <body>
     <div id="app-root">
         <!-- Mobile Header (Visible on small screens) -->
@@ -90,22 +93,26 @@
     <div id="loading-spinner" class="spinner-overlay hidden">
         <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem">
             <div class="spinner"></div>
-            <p id="spinner-text" style="color: var(--text-dim); font-size: 0.9rem; font-weight: 500; letter-spacing: 1px">LOADING SPACE</p>
+            <p id="spinner-text"
+                style="color: var(--text-dim); font-size: 0.9rem; font-weight: 500; letter-spacing: 1px">LOADING SPACE
+            </p>
         </div>
     </div>
 
     <!-- Modals (Note editor, tutorial, etc.) -->
     <div id="note-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <input type="text" id="note-title-input" class="modal-input" placeholder="Title">
-            <textarea id="note-content-input" class="modal-input" placeholder="Start typing your genius idea..."></textarea>
-            
+            <input type="text" id="note-title-input" class="modal-input" placeholder="title">
+            <textarea id="note-content-input" class="modal-input"
+                placeholder="Any thoughts"></textarea>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem">
                 <button id="delete-modal-btn" class="delete-btn hidden" title="Delete Note">
                     <i class="fas fa-trash"></i>
                 </button>
                 <div style="display: flex; gap: 1rem; margin-left: auto">
-                    <button onclick="closeModal()" class="nav-item-btn" style="background: transparent; border: none; padding: 0.8rem 1.5rem">Cancel</button>
+                    <button onclick="closeModal()" class="nav-item-btn"
+                        style="background: transparent; border: none; padding: 0.8rem 1.5rem">Cancel</button>
                     <button id="save-note-btn" class="btn-primary">Save Note</button>
                 </div>
             </div>
@@ -116,4 +123,5 @@
     <!-- Main Logic -->
     <script src="app.js"></script>
 </body>
+
 </html>

@@ -54,7 +54,7 @@ let viewContainer, mainNav;
 function initApp() {
     viewContainer = document.getElementById('view-container');
     mainNav = document.getElementById('main-nav');
-    
+
     // Instant Theme Recovery (Prevent Flash)
     const isUltra = localStorage.getItem('ultraDark') === 'true';
     if (isUltra) document.body.classList.add('ultra-dark');
@@ -129,7 +129,7 @@ function initApp() {
 
 async function showView(viewName) {
     if (!viewContainer || !mainNav) return;
-    
+
     // Auth Guard
     if (!currentUser && viewName !== 'login' && viewName !== 'register') {
         navigate('login'); return;
@@ -202,7 +202,7 @@ function renderDashboard() {
             <button id="add-note-btn" class="btn-primary"><i class="fas fa-plus"></i> New Note</button>
         </header>
         <div id="notes-list" class="notes-grid"></div>
-        <div id="empty-state" class="hidden" style="text-align:center; padding: 4rem; color: var(--text-dim)"><p>No notes in sanctuary.</p></div>
+        <div id="empty-state" class="hidden" style="text-align:center; padding: 4rem; color: var(--text-dim)"><p>Empty notes</p></div>
     `;
     document.getElementById('add-note-btn').onclick = () => openNoteModal();
     toggleSpinner(false);
@@ -278,13 +278,13 @@ function renderFeedback() {
     viewContainer.innerHTML = `
         <div style="max-width: 600px; margin: 4rem auto; text-align: center; animation: slideUp 0.6s ease-out">
             <h1 style="font-size: 2.5rem; margin-bottom: 1rem">Feedback</h1>
-            <p style="color: var(--text-muted); margin-bottom: 2rem">Directly to Jemmy Francisco</p>
+            <p style="color: var(--text-muted); margin-bottom: 2rem">Send to developer</p>
             <div class="settings-group" style="text-align: left">
-                <textarea id="feedback-text" placeholder="Your professional feedback..." style="width: 100%; min-height: 150px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; color: white; padding: 1.25rem; font-family: inherit; resize: vertical"></textarea>
+                <textarea id="feedback-text" placeholder="Add feedback" style="width: 100%; min-height: 150px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; color: white; padding: 1.25rem; font-family: inherit; resize: vertical"></textarea>
             </div>
             <button id="submit-feedback-btn" class="btn-primary" style="width: 100%; margin-top: 1.5rem">Send</button>
         </div>`;
-    
+
     document.getElementById('submit-feedback-btn').onclick = async () => {
         const text = document.getElementById('feedback-text').value.trim();
         if (!text) return;
@@ -300,7 +300,7 @@ function renderFeedback() {
                 showToast("Feedback Sent", "success");
                 navigate('dashboard');
             }
-        } catch(e) {}
+        } catch (e) { }
         toggleSpinner(false);
     };
     toggleSpinner(false);
@@ -342,7 +342,7 @@ async function wipeAllData() {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/wipe`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) { showToast("Sanctuary Cleared", "success"); loadNotes(); }
-    } catch(e) { showToast("Action failed", "error"); }
+    } catch (e) { showToast("Action failed", "error"); }
     toggleSpinner(false);
 }
 
@@ -355,7 +355,7 @@ async function deleteAccount() {
         await currentUser.delete();
         showToast("Account Removed", "success");
         auth.signOut();
-    } catch(e) { showToast("Security: Please sign in again to delete account.", "error"); }
+    } catch (e) { showToast("Security: Please sign in again to delete account.", "error"); }
     toggleSpinner(false);
 }
 
@@ -373,9 +373,7 @@ async function fetchAllNotes() {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) notes = await res.json();
-    } catch(e) {
-        showToast("Error fetching sanctuary notes", "error");
-    }
+    } catch (e) { }
 }
 
 async function loadNotes() {
@@ -402,10 +400,10 @@ async function loadNotes() {
 function openNoteModal(noteId = null) {
     const modal = document.getElementById('note-modal');
     const viewContainer = modal.querySelector('.modal-content');
-    
+
     // Robust ID matching (handles string vs number from DB)
     const note = noteId ? notes.find(n => n.id == noteId) : null;
-    
+
     const renderReadView = () => {
         viewContainer.innerHTML = `
             <div style="animation: slideUp 0.4s ease-out">
@@ -443,7 +441,7 @@ function openNoteModal(noteId = null) {
                     </div>
                     <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
                 </div>
-                <input id="note-title-input" class="modal-input" placeholder="Give your note a title..." value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
+                <input id="note-title-input" class="modal-input" placeholder="title" value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
                 
                 <div style="margin-bottom: 1.5rem">
                     <select id="note-category-input" class="modal-input" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; font-weight: 600; color: var(--primary)">
@@ -457,16 +455,16 @@ function openNoteModal(noteId = null) {
                     </select>
                 </div>
 
-                <textarea id="note-content-input" class="modal-input" placeholder="What's on your mind?" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
+                <textarea id="note-content-input" class="modal-input" placeholder="Any thoughts" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
                 <div style="display: flex; gap: 1rem">
                     <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Sync Changes</button>
                     ${noteId ? `<button id="cancel-edit-btn" class="btn-primary" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted)">Discard</button>` : ''}
                 </div>
             </div>
         `;
-        
+
         if (noteId) document.getElementById('cancel-edit-btn').onclick = () => renderReadView();
-        
+
         document.getElementById('save-note-btn').onclick = async () => {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
@@ -504,12 +502,12 @@ async function deleteNote(id) {
     try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) { 
-            showToast("Deleted", "success"); 
+        if (res.ok) {
+            showToast("Deleted", "success");
             closeModal();
-            loadNotes(); 
+            loadNotes();
         }
-    } catch(e) {}
+    } catch (e) { }
     toggleSpinner(false);
 }
 
