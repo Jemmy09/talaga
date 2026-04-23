@@ -1091,7 +1091,7 @@ async function updateGeneralAccess(id, access_type, public_role) {
         }
     } catch (e) {
         console.error("General Access Error:", e);
-        showToast("Connection failed. Please check your internet.", "error");
+        showToast(`Connection failed: ${e.message}`, "error");
     } finally {
         toggleSpinner(false);
     }
