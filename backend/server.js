@@ -531,15 +531,18 @@ app.post('/api/feedback', authenticateUser, async (req, res) => {
         await transporter.sendMail({
           from: `"Talaga Workspace" <${process.env.EMAIL_USER}>`,
           to: 'Jemmyfrancisco30@gmail.com',
+          replyTo: req.user.email, // Allows owner to reply directly to user
           subject: `✨ New Feedback from ${req.user.name || 'a User'}`,
           html: `
             <div style="font-family: sans-serif; padding: 20px; color: #333; background: #f9f9f9; border-radius: 10px;">
               <h2 style="color: #6366f1;">New Feedback Received!</h2>
-              <p><strong>From:</strong> ${req.user.name || 'Anonymous'} (${req.user.email || 'No email provided'})</p>
-              <div style="background: white; padding: 15px; border-left: 4px solid #6366f1; margin: 20px 0;">
+              <p><strong>From:</strong> ${req.user.name || 'Anonymous'} (<a href="mailto:${req.user.email}">${req.user.email}</a>)</p>
+              <div style="background: white; padding: 15px; border-left: 4px solid #6366f1; margin: 20px 0; font-size: 1.1rem; line-height: 1.6;">
                 "${text}"
               </div>
-              <p style="font-size: 0.8rem; color: #777;">This is an automated notification from your Talaga Workspace.</p>
+              <p style="font-size: 0.85rem; color: #777; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px;">
+                💡 <strong>Tip:</strong> You can click "Reply" in your email app to message this user back directly.
+              </p>
             </div>
           `
         });
