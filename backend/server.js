@@ -290,20 +290,23 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
 });
 
 // 3. Update an existing note
-app.put('/api/notes/:id', authenticateUser, async (req, res) => {
+app.post('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { title, description, content, category, attachments } = req.body;
+  const { title, content, category, attachments } = req.body;
   const userEmail = req.user.email;
   const userName = req.user.name || req.user.email || 'Anonymous';
   
   try {
+    const noteId = parseInt(id);
+    if (isNaN(noteId)) return res.status(400).json({ error: 'Invalid Note ID' });
+
     // Check if user is owner, explicit collaborator, or has public access
     const accessCheck = await pool.query(
       `SELECT n.user_id, n.sharing_config, c.can_edit 
        FROM notes n
-       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $3
+       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
        WHERE n.id = $1`,
-      [id, req.user.uid, userEmail]
+      [noteId, userEmail]
     );
 
     if (accessCheck.rowCount === 0) {
@@ -311,26 +314,30 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
     }
 
     const row = accessCheck.rows[0];
+    const config = row.sharing_config || {};
     const isOwner = row.user_id === req.user.uid;
     const isCollaboratorEditor = row.can_edit === true;
-    const isPublicEditor = row.sharing_config?.access_type === 'public' && row.sharing_config?.public_role === 'editor';
+    const isPublicEditor = config.access_type === 'public' && config.public_role === 'editor';
 
     if (!isOwner && !isCollaboratorEditor && !isPublicEditor) {
-      return res.status(403).json({ error: 'You do not have permission to edit this note' });
+       console.log(`🚫 [ACCESS] Update denied for user ${userEmail} on note ${noteId}`);
+       return res.status(403).json({ error: 'You do not have permission to edit this note' });
     }
 
+    console.log(`📝 [ACCESS] Updating note ${noteId} by ${userEmail} (Role: ${isOwner?'Owner':(isCollaboratorEditor?'Collab':'Public')})`);
+
     const result = await pool.query(
-      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, attachments = $5, last_editor_name = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7 RETURNING *',
-      [title || null, description || null, content || null, category || 'info', JSON.stringify(attachments || []), userName, id]
+      'UPDATE notes SET title = $1, content = $2, category = $3, attachments = $4, last_editor_name = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *',
+      [title || 'Untitled', content || '', category || 'info', JSON.stringify(attachments || []), userName, noteId]
     );
 
     // Log history
-    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, 'Updated the note content']);
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [noteId, userName, 'Updated the note content']);
     
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Update Error:', err);
-    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    console.error('❌ [UPDATE ERROR]:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 });
 
@@ -465,28 +472,35 @@ app.get('/api/notes/:id/history', authenticateUser, async (req, res) => {
   const userEmail = req.user.email;
 
   try {
+    const noteId = parseInt(id);
+    if (isNaN(noteId)) return res.status(400).json({ error: 'Invalid Note ID' });
+
     // Access Check: Owner, Collaborator, or Public
     const accessCheck = await pool.query(
-      `SELECT n.user_id, n.sharing_config, EXISTS(SELECT 1 FROM note_collaborators WHERE note_id = $1 AND user_email = $3) as is_collab
+      `SELECT n.user_id, n.sharing_config, EXISTS(SELECT 1 FROM note_collaborators WHERE note_id = $1 AND user_email = $2) as is_collab
        FROM notes n WHERE n.id = $1`,
-      [id, req.user.uid, userEmail]
+      [noteId, userEmail]
     );
 
-    if (accessCheck.rowCount === 0) return res.status(404).json({ error: 'Note not found' });
+    if (accessCheck.rowCount === 0) {
+        console.warn(`⚠️ [HISTORY] Note ${noteId} not found`);
+        return res.status(404).json({ error: 'Note not found' });
+    }
     
     const row = accessCheck.rows[0];
     const isOwner = row.user_id === req.user.uid;
     const isPublic = row.sharing_config?.access_type === 'public';
     
     if (!isOwner && !row.is_collab && !isPublic) {
+      console.log(`🚫 [HISTORY] Access denied for ${userEmail} on note ${noteId}`);
       return res.status(403).json({ error: 'Access denied to history' });
     }
 
-    const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 30', [id]);
+    const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 30', [noteId]);
     res.json(result.rows);
   } catch (err) { 
-    console.error('History Fetch Error:', err);
-    res.status(500).json({ error: 'Server error loading history' }); 
+    console.error('❌ [HISTORY ERROR]:', err);
+    res.status(500).json({ error: 'Server error loading history', message: err.message }); 
   }
 });
 

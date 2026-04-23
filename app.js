@@ -847,7 +847,7 @@ function openNoteModal(noteId = null) {
                     return;
                 }
                 const token = await currentUser.getIdToken();
-                const method = noteId ? 'PUT' : 'POST';
+                const method = 'POST'; // Always use POST for maximum compatibility
                 const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
                 const res = await fetch(url, {
                     method,
