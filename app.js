@@ -423,7 +423,7 @@ function openNoteModal(noteId = null) {
                     ${note ? note.content : 'No content provided.'}
                 </div>
                 <div style="margin-top: 3rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem; display: flex; justify-content: flex-end">
-                    <button onclick="closeModal()" class="nav-item-btn" style="width: auto; padding: 0.5rem 1.5rem">Back to Sanctuary</button>
+                    <button onclick="closeModal()" class="nav-item-btn" style="width: auto; padding: 0.5rem 1.5rem">Back to Notes</button>
                 </div>
             </div>
         `;
