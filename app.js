@@ -106,6 +106,11 @@ async function loadDashboard() {
     }
 }
 
+// Start polling for invitations every 30 seconds
+setInterval(() => {
+    if (currentUser && currentView === 'dashboard') loadInvitations();
+}, 30000);
+
 let invitations = [];
 async function loadInvitations() {
     try {
@@ -113,9 +118,31 @@ async function loadInvitations() {
         const res = await fetch(`${API_BASE_URL}/api/invitations`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error();
         invitations = await res.json();
+        updateInvitationBadge();
         renderInvitations();
-    } catch (e) {}
+    } catch (e) {
+        console.warn("Invitation fetch failed");
+    }
+}
+
+function updateInvitationBadge() {
+    const navItem = document.querySelector('[onclick="navigate(\'dashboard\')"]');
+    if (!navItem) return;
+
+    let badge = navItem.querySelector('.nav-badge');
+    if (invitations.length > 0) {
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-badge';
+            badge.style.cssText = 'background: var(--accent); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; margin-left: auto; font-weight: 800;';
+            navItem.appendChild(badge);
+        }
+        badge.innerText = invitations.length;
+    } else if (badge) {
+        badge.remove();
+    }
 }
 
 function renderInvitations() {
@@ -953,29 +980,29 @@ async function updateGeneralAccess(id, access_type, public_role) {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}/access`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ access_type, public_role })
         });
         
         if (res.ok) {
             const newConfig = await res.json();
-            // Update the local notes array to keep UI in sync
             const noteIdx = notes.findIndex(n => n.id == id);
             if (noteIdx !== -1) {
                 notes[noteIdx].sharing_config = newConfig;
             }
-            
-            showToast("Access updated", "success");
-            // Re-render sharing modal with new data
-            openSharingModal(id); 
-            // Also refresh the dashboard icons in the background
+            showToast("Access settings saved", "success");
+            openSharingModal(id);
             renderNotes();
         } else {
             const err = await res.json();
-            showToast(err.error || "Failed to update access", "error");
+            showToast(err.error || "Update failed", "error");
         }
     } catch (e) {
-        showToast("Network error", "error");
+        console.error("General Access Error:", e);
+        showToast("Network Error: Could not reach server", "error");
     } finally {
         toggleSpinner(false);
     }

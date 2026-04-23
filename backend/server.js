@@ -332,39 +332,36 @@ app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
   const userName = req.user.name || req.user.email || 'Anonymous';
 
   try {
-    const ownerCheck = await pool.query('SELECT sharing_config FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
+    const noteId = parseInt(id);
+    if (isNaN(noteId)) return res.status(400).json({ error: 'Invalid Note ID' });
+
+    const ownerCheck = await pool.query('SELECT sharing_config FROM notes WHERE id = $1 AND user_id = $2', [noteId, req.user.uid]);
     if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can change access' });
 
     let config = ownerCheck.rows[0].sharing_config;
-    
-    // Ensure config is a valid object
     if (!config || typeof config !== 'object') {
       config = { access_type: 'restricted', public_role: 'viewer', share_token: null };
     }
 
-    // Explicitly update fields
     if (access_type) config.access_type = access_type;
     if (public_role) config.public_role = public_role;
     
-    // Generate token if switching to public for the first time
     if (config.access_type === 'public' && !config.share_token) {
       config.share_token = crypto.randomBytes(16).toString('hex');
     }
 
     const updateRes = await pool.query(
       'UPDATE notes SET sharing_config = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING sharing_config', 
-      [JSON.stringify(config), id]
+      [JSON.stringify(config), noteId]
     );
     
     const newConfig = updateRes.rows[0].sharing_config;
-
-    // Log history
     await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', 
-      [id, userName, `Changed access to ${newConfig.access_type} (${newConfig.public_role})`]);
+      [noteId, userName, `Changed access to ${newConfig.access_type} (${newConfig.public_role})`]);
 
     res.json(newConfig);
   } catch (err) {
-    console.error('Access Update Error:', err);
+    console.error('❌ Access Update Error:', err.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
