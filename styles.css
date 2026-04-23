@@ -786,3 +786,79 @@ img, video, svg {
     height: auto;
     display: block;
 }
+
+/* ============================================
+   QUILL EDITOR CUSTOM THEME (Dark)
+   ============================================ */
+.ql-toolbar.ql-snow {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 10px !important;
+}
+
+.ql-container.ql-snow {
+    border: 1px solid var(--glass-border) !important;
+    border-top: none !important;
+    border-radius: 0 0 12px 12px !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 1.1rem !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.ql-editor {
+    min-height: 300px;
+    color: var(--text-main) !important;
+}
+
+.ql-editor.ql-blank::before {
+    color: var(--text-dim) !important;
+    font-style: normal !important;
+}
+
+/* Style the toolbar icons */
+.ql-snow .ql-stroke { stroke: var(--text-muted) !important; }
+.ql-snow .ql-fill { fill: var(--text-muted) !important; }
+.ql-snow .ql-picker { color: var(--text-muted) !important; }
+
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+    stroke: var(--primary) !important;
+    fill: var(--primary) !important;
+}
+
+/* ============================================
+   NOTE CONTENT DISPLAY (Read Mode)
+   ============================================ */
+.note-content-display img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 1rem 0;
+    border: 1px solid var(--glass-border);
+    transition: var(--transition);
+}
+
+.note-content-display img:hover {
+    box-shadow: var(--glow);
+    transform: scale(1.01);
+}
+
+/* Lightbox Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsive Fixes for Quill */
+@media (max-width: 600px) {
+    .ql-toolbar.ql-snow {
+        padding: 5px !important;
+    }
+    .ql-formats {
+        margin-right: 5px !important;
+    }
+}
+

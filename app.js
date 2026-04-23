@@ -443,7 +443,7 @@ function openNoteModal(noteId = null) {
                 <div id="attachments-display" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem">
                     ${(note?.attachments || []).map(url => `
                         <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); aspect-ratio: 1; background: #000">
-                            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${url}')">
+                            <img src="${url}" class="lightbox-trigger" style="width: 100%; height: 100%; object-fit: cover; cursor: zoom-in;">
                         </div>
                     `).join('')}
                 </div>
@@ -453,7 +453,7 @@ function openNoteModal(noteId = null) {
                     <div id="history-list" style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.8rem; color: var(--text-muted);"></div>
                 </div>
 
-                <div style="font-size: 1.25rem; line-height: 2; color: #e2e8f0; white-space: pre-wrap; min-height: 300px; padding: 0.5rem 0">
+                <div class="note-content-display" style="font-size: 1.1rem; line-height: 1.8; color: #e2e8f0; min-height: 300px; padding: 0.5rem 0">
                     ${note ? note.content : 'No content provided.'}
                 </div>
                 <div style="margin-top: 3rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem; display: flex; justify-content: flex-end">
@@ -461,6 +461,13 @@ function openNoteModal(noteId = null) {
                 </div>
             </div>
         `;
+        
+        // Add lightbox behavior to all images in the display
+        document.querySelectorAll('.lightbox-trigger, .note-content-display img').forEach(img => {
+            img.style.cursor = 'zoom-in';
+            img.onclick = () => openLightbox(img.src);
+        });
+
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
         if (note?.is_owner) {
             document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
@@ -507,13 +514,35 @@ function openNoteModal(noteId = null) {
                     </div>
                 </div>
 
-                <textarea id="note-content-input" class="modal-input" placeholder="Any thoughts" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
+                <div id="editor-container" style="height: 400px; background: rgba(255,255,255,0.01); color: white; border: 1px solid var(--glass-border); border-radius: 12px; margin-bottom: 1.5rem"></div>
+                
                 <div style="display: flex; gap: 1rem">
                     <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Save Changes</button>
                     ${noteId ? `<button id="cancel-edit-btn" class="btn-primary" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted)">Discard</button>` : ''}
                 </div>
             </div>
         `;
+
+        // Initialize Quill with Document-like features
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your thoughts like a document...'
+        });
+
+        // Load existing content
+        if (note?.content) {
+            quill.root.innerHTML = note.content;
+        }
 
         let attachments = note?.attachments ? [...note.attachments] : [];
 
@@ -554,7 +583,7 @@ function openNoteModal(noteId = null) {
 
         document.getElementById('save-note-btn').onclick = async () => {
             const title = document.getElementById('note-title-input').value.trim();
-            const content = document.getElementById('note-content-input').value.trim();
+            const content = quill.root.innerHTML; // Get Rich Text HTML
             const category = document.getElementById('note-category-input').value;
             
             if (!title && !content) return;
@@ -654,6 +683,27 @@ async function shareNote(id) {
     } finally {
         toggleSpinner(false);
     }
+}
+
+function openLightbox(src) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 10000; display: flex;
+        align-items: center; justify-content: center; cursor: zoom-out;
+        animation: fadeIn 0.3s ease;
+    `;
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 0 50px rgba(0,0,0,0.5);';
+    
+    overlay.onclick = () => {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+    };
+    
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
 }
 
 async function deleteNote(id) {
