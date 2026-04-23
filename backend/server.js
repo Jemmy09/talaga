@@ -88,7 +88,15 @@ const pool = new Pool({
 })();
 
 const app = express();
-const port = process.env.PORT || 3010; // Standard professional port
+const port = process.env.PORT || 3010;
+
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json()); // Essential for parsing JSON bodies!
 
 // --- Pre-flight Checks (Professional Security) ---
 if (!process.env.DATABASE_URL) {
@@ -343,7 +351,7 @@ app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
 });
 
 // 5. Update sharing/access level
-app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
+app.post('/api/notes/:id/access', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { access_type, public_role } = req.body;
   const userName = req.user.name || req.user.email || 'Anonymous';

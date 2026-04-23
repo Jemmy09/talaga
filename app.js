@@ -1062,7 +1062,7 @@ async function updateGeneralAccess(id, access_type, public_role) {
     try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}/access`, {
-            method: 'PATCH',
+            method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
                 'Authorization': `Bearer ${token}` 
