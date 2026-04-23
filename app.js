@@ -1078,7 +1078,7 @@ async function updateGeneralAccess(id, access_type, public_role) {
             }
             showToast("Access settings saved", "success");
             openSharingModal(id);
-            renderNotes();
+            loadNotes();
         } else {
             let errorMsg = "Update failed";
             try {
