@@ -2,30 +2,30 @@
   <img src="images/logo.png" width="120" alt="Talaga Logo">
 </p>
 
-# Talaga - The Sanctuary for Your Thoughts 🧘‍♂️✨
+# Talaga - A Simple Space for Your Thoughts 🧘‍♂️✨
 
-**Talaga** (Tagalog for *"Really"* or *"Truly"*) isn't just another notes app. It’s your digital deep-breath. In a world full of chaotic tabs and forgotten sticky notes, Talaga provides a premium, glassmorphism-inspired space where your ideas can actually hear themselves think.
+**Talaga** (Tagalog for *"Really"* or *"Truly"*) isn't just another notes app. It’s a clean, quiet space for your mind. In a world full of chaotic tabs and forgotten sticky notes, Talaga provides a professional, glassmorphism-inspired workspace where your ideas can grow.
 
-> *"Your brain is for having ideas, not storing them. Talaga handles the storage, so you can handle the genius."* 🧠🚀
+> *"Your brain is for having ideas, not storing them. Talaga handles the storage, so you can handle the work."* 🧠🚀
 
 ---
 
 ## ✨ Why Talaga?
-- **Elite Aesthetics**: A workspace so beautiful you'll actually *want* to organize your life.
-- **Secure by Design**: Armed with Firebase Auth and PostgreSQL; your secrets are safe with us.
+- **Clean Aesthetics**: A workspace designed for focus and organization.
+- **Secure by Design**: Armed with Firebase Auth and PostgreSQL; your data is safe.
 - **Seamless Sync**: From your desk to the coffee shop, your notes follow you everywhere.
 - **Free-Tier Powered**: Engineered to run 100% on high-performance free tiers (Aiven + Render + GitHub).
 
 ## 🛠️ The Tech "Secret Sauce"
-We didn't just throw this together in a weekend (okay, maybe we did, but it was a *very* professional weekend):
-- **Frontend**: Silky smooth SPA hosted on **GitHub Pages**.
-- **Security**: **Firebase Auth** (Google Login) for that "one-tap" magic.
+We built this with a focus on stability and simplicity:
+- **Frontend**: A responsive SPA hosted on **GitHub Pages**.
+- **Security**: **Firebase Auth** (Google Login) for a secure, one-tap entry.
 - **Brain (API)**: **Node.js/Express** running on **Render**.
 - **Memory (DB)**: **Aiven PostgreSQL** for rock-solid data persistence.
 
 ---
 
-## 🚀 Getting Your Sanctuary Live
+## 🚀 Getting Your Workspace Live
 
 ### 1. The Foundation (Database)
 1. Head over to your **Aiven Console**.

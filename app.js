@@ -478,7 +478,7 @@ function renderDashboard() {
         <div id="notes-list" class="notes-grid view-enter">
             <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-dim);">
                 <div class="spinner" style="margin: 0 auto 1rem;"></div>
-                <p style="font-size: 0.9rem; letter-spacing: 1px;">SYNCING YOUR SANCTUARY...</p>
+                <p style="font-size: 0.9rem; letter-spacing: 1px;">SYNCING YOUR WORKSPACE...</p>
             </div>
         </div>
         <div id="empty-state" class="hidden" style="text-align:center; padding: 4rem; color: var(--text-dim)"><p>Empty notes</p></div>
@@ -612,7 +612,7 @@ function renderFeedback() {
         <div class="view-enter" style="max-width: 700px; margin: 3rem auto; padding-bottom: 5rem">
             <div style="text-align: center; margin-bottom: 3.5rem">
                 <h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 0.75rem">Platform Feedback</h1>
-                <p style="color: var(--text-dim); font-size: 1.1rem">Your insights help us craft a better sanctuary for your thoughts.</p>
+                <p style="color: var(--text-dim); font-size: 1.1rem">Your insights help us craft a better space for your thoughts.</p>
             </div>
             
             <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 2.5rem; padding: 3rem; box-shadow: var(--shadow-xl); position: relative; overflow: hidden;">
@@ -719,12 +719,12 @@ function saveSettings() {
 }
 
 async function wipeAllData() {
-    if (!confirm("Are you 100% sure? This will wipe ALL your sanctuary notes forever.")) return;
+    if (!confirm("Are you 100% sure? This will wipe ALL your workspace data forever.")) return;
     toggleSpinner(true, 'WIPING DATA');
     try {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/wipe`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) { showToast("Sanctuary Cleared", "success"); loadNotes(); }
+        if (res.ok) { showToast("Workspace Cleared", "success"); loadNotes(); }
     } catch (e) { showToast("Action failed", "error"); }
     toggleSpinner(false);
 }
