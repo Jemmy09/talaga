@@ -449,8 +449,9 @@ function renderLogin() {
         toggleSpinner(true, 'AUTHENTICATING');
         try {
             await auth.signInWithPopup(provider);
-            // Instant success feedback
+            // Force instant redirect to dashboard
             toggleSpinner(true, 'SUCCESS! REDIRECTING...');
+            navigate('dashboard');
         } catch (e) {
             toggleSpinner(false);
             showToast(e.message, "error");
