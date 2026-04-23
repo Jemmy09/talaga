@@ -833,6 +833,11 @@ function openNoteModal(noteId = null) {
 
             toggleSpinner(true, 'SAVING');
             try {
+                if (!currentUser) {
+                    showToast("Please sign in to save changes", "warning");
+                    toggleSpinner(false);
+                    return;
+                }
                 const token = await currentUser.getIdToken();
                 const method = noteId ? 'PUT' : 'POST';
                 const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
@@ -847,13 +852,12 @@ function openNoteModal(noteId = null) {
                     loadNotes(); 
                     showToast("Changes saved successfully", "success"); 
                 } else {
-                    const errorText = await res.text();
-                    console.error("API Error:", errorText);
-                    showToast("Failed to save. Please try again.", "error");
+                    const err = await res.json().catch(() => ({}));
+                    showToast(err.error || "Failed to save. Unauthorized.", "error");
                 }
             } catch (err) {
-                console.error("Network Error:", err);
-                showToast("Network error. Please check your connection.", "error");
+                console.error("Save Error:", err);
+                showToast("Network error or permission denied", "error");
             } finally {
                 toggleSpinner(false);
             }
@@ -880,18 +884,28 @@ async function toggleHistory(id) {
     }
 
     try {
+        if (!currentUser) {
+            showToast("Please sign in to view history", "warning");
+            return;
+        }
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}/history`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || "Unauthorized");
+        }
+
         const history = await res.json();
         const list = document.getElementById('history-list');
         list.innerHTML = history.length > 0 
-            ? history.map(h => `<div><strong style="color: white">${h.user_name}</strong> ${h.action} <span style="opacity: 0.5; font-size: 0.7rem">${new Date(h.created_at).toLocaleString()}</span></div>`).join('')
+            ? history.map(h => `<div style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05)"><strong style="color: white">${h.user_name}</strong> ${h.action} <span style="opacity: 0.5; font-size: 0.7rem; display: block; margin-top: 2px">${new Date(h.created_at).toLocaleString()}</span></div>`).join('')
             : 'No history found.';
         section.classList.remove('hidden');
     } catch (e) {
-        showToast("Failed to load history", "error");
+        showToast(e.message === "Unauthorized" ? "Access denied" : "Failed to load history", "error");
     }
 }
 

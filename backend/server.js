@@ -297,21 +297,25 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   const userName = req.user.name || req.user.email || 'Anonymous';
   
   try {
-    // Check if user is owner or collaborator with edit permission
+    // Check if user is owner, explicit collaborator, or has public access
     const accessCheck = await pool.query(
-      `SELECT n.user_id, c.can_edit FROM notes n
+      `SELECT n.user_id, n.sharing_config, c.can_edit 
+       FROM notes n
        LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $3
-       WHERE n.id = $1 AND (n.user_id = $2 OR c.user_email = $3)`,
+       WHERE n.id = $1`,
       [id, req.user.uid, userEmail]
     );
 
     if (accessCheck.rowCount === 0) {
-      return res.status(404).json({ error: 'Note not found or unauthorized' });
+      return res.status(404).json({ error: 'Note not found' });
     }
 
     const row = accessCheck.rows[0];
     const isOwner = row.user_id === req.user.uid;
-    if (!isOwner && row.can_edit === false) {
+    const isCollaboratorEditor = row.can_edit === true;
+    const isPublicEditor = row.sharing_config?.access_type === 'public' && row.sharing_config?.public_role === 'editor';
+
+    if (!isOwner && !isCollaboratorEditor && !isPublicEditor) {
       return res.status(403).json({ error: 'You do not have permission to edit this note' });
     }
 
@@ -458,10 +462,32 @@ app.get('/api/notes/:id/collaborators', authenticateUser, async (req, res) => {
 
 app.get('/api/notes/:id/history', authenticateUser, async (req, res) => {
   const { id } = req.params;
+  const userEmail = req.user.email;
+
   try {
+    // Access Check: Owner, Collaborator, or Public
+    const accessCheck = await pool.query(
+      `SELECT n.user_id, n.sharing_config, EXISTS(SELECT 1 FROM note_collaborators WHERE note_id = $1 AND user_email = $3) as is_collab
+       FROM notes n WHERE n.id = $1`,
+      [id, req.user.uid, userEmail]
+    );
+
+    if (accessCheck.rowCount === 0) return res.status(404).json({ error: 'Note not found' });
+    
+    const row = accessCheck.rows[0];
+    const isOwner = row.user_id === req.user.uid;
+    const isPublic = row.sharing_config?.access_type === 'public';
+    
+    if (!isOwner && !row.is_collab && !isPublic) {
+      return res.status(403).json({ error: 'Access denied to history' });
+    }
+
     const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 30', [id]);
     res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: 'Server error' }); }
+  } catch (err) { 
+    console.error('History Fetch Error:', err);
+    res.status(500).json({ error: 'Server error loading history' }); 
+  }
 });
 
 // 7. Submit feedback
