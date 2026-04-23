@@ -373,7 +373,9 @@ async function fetchAllNotes() {
         const token = await currentUser.getIdToken();
         const res = await fetch(`${API_BASE_URL}/api/notes`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) notes = await res.json();
-    } catch(e) {}
+    } catch(e) {
+        showToast("Error fetching sanctuary notes", "error");
+    }
 }
 
 async function loadNotes() {
@@ -441,7 +443,20 @@ function openNoteModal(noteId = null) {
                     </div>
                     <button onclick="closeModal()" class="delete-btn"><i class="fas fa-times"></i></button>
                 </div>
-                <input id="note-title-input" class="modal-input" placeholder="Give your note a title..." value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
+                <input id="note-title-input" class="modal-input" placeholder="Give your note a title..." value="${note ? (note.title || '') : ''}" style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border)">
+                
+                <div style="margin-bottom: 1.5rem">
+                    <select id="note-category-input" class="modal-input" style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.5rem 1rem; width: auto; font-size: 0.85rem; font-weight: 600; color: var(--primary)">
+                        <option value="info" ${note?.category === 'info' ? 'selected' : ''}>General Info</option>
+                        <option value="todo" ${note?.category === 'todo' ? 'selected' : ''}>To-Do List</option>
+                        <option value="account" ${note?.category === 'account' ? 'selected' : ''}>Accounts</option>
+                        <option value="business" ${note?.category === 'business' ? 'selected' : ''}>Business</option>
+                        <option value="student" ${note?.category === 'student' ? 'selected' : ''}>Academic</option>
+                        <option value="personal" ${note?.category === 'personal' ? 'selected' : ''}>Personal</option>
+                        <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
+                    </select>
+                </div>
+
                 <textarea id="note-content-input" class="modal-input" placeholder="What's on your mind?" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
                 <div style="display: flex; gap: 1rem">
                     <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Sync Changes</button>
@@ -455,6 +470,7 @@ function openNoteModal(noteId = null) {
         document.getElementById('save-note-btn').onclick = async () => {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
+            const category = document.getElementById('note-category-input').value;
             if (!title && !content) return;
             toggleSpinner(true, 'SYNCHRONIZING');
             const token = await currentUser.getIdToken();
@@ -463,7 +479,7 @@ function openNoteModal(noteId = null) {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, content })
+                body: JSON.stringify({ title, content, category })
             });
             if (res.ok) { closeModal(); loadNotes(); showToast("Synchronized", "success"); }
             toggleSpinner(false);

@@ -29,7 +29,8 @@ const pool = new Pool({
           description TEXT,
           content TEXT,
           category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
@@ -149,7 +150,7 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   
   try {
     const result = await pool.query(
-      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4 WHERE id = $5 AND user_id = $6 RETURNING *',
+      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND user_id = $6 RETURNING *',
       [title, description, content, category, id, req.user.uid]
     );
     
