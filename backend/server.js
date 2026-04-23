@@ -150,13 +150,13 @@ app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
 
 // 1. Get invitations for the user
 app.get('/api/invitations', authenticateUser, async (req, res) => {
-  const userEmail = req.user.email;
+  const userEmail = req.user.email.toLowerCase();
   try {
     const result = await pool.query(
       `SELECT n.id, n.title, n.owner_name, c.can_edit 
        FROM notes n
        JOIN note_collaborators c ON n.id = c.note_id
-       WHERE c.user_email = $1 AND c.status = 'pending'`,
+       WHERE LOWER(c.user_email) = $1 AND c.status = 'pending'`,
       [userEmail]
     );
     res.json(result.rows);
@@ -168,16 +168,16 @@ app.get('/api/invitations', authenticateUser, async (req, res) => {
 // 1.2 Accept/Reject invitation
 app.post('/api/invitations/:id/:action', authenticateUser, async (req, res) => {
   const { id, action } = req.params;
-  const userEmail = req.user.email;
+  const userEmail = req.user.email.toLowerCase();
   try {
     if (action === 'accept') {
       await pool.query(
-        "UPDATE note_collaborators SET status = 'accepted' WHERE note_id = $1 AND user_email = $2",
+        "UPDATE note_collaborators SET status = 'accepted' WHERE note_id = $1 AND LOWER(user_email) = $2",
         [id, userEmail]
       );
     } else {
       await pool.query(
-        "DELETE FROM note_collaborators WHERE note_id = $1 AND user_email = $2",
+        "DELETE FROM note_collaborators WHERE note_id = $1 AND LOWER(user_email) = $2",
         [id, userEmail]
       );
     }
@@ -189,15 +189,15 @@ app.post('/api/invitations/:id/:action', authenticateUser, async (req, res) => {
 
 // 1.3 Get all notes (only accepted ones)
 app.get('/api/notes', authenticateUser, async (req, res) => {
-  const userEmail = req.user.email;
+  const userEmail = req.user.email.toLowerCase();
   try {
     const result = await pool.query(
       `SELECT DISTINCT n.*, 
        (n.user_id = $1) as is_owner,
        CASE WHEN n.user_id = $1 THEN true ELSE COALESCE(c.can_edit, false) END as can_edit
        FROM notes n
-       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
-       WHERE n.user_id = $1 OR (c.user_email = $2 AND c.status = 'accepted')
+       LEFT JOIN note_collaborators c ON n.id = c.note_id AND LOWER(c.user_email) = $2
+       WHERE n.user_id = $1 OR (LOWER(c.user_email) = $2 AND c.status = 'accepted')
        ORDER BY n.updated_at DESC`,
       [req.user.uid, userEmail]
     );
@@ -373,18 +373,19 @@ app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
   const userName = req.user.name || req.user.email || 'Anonymous';
   
   if (!email) return res.status(400).json({ error: 'Email is required' });
+  const targetEmail = email.toLowerCase();
 
   try {
     const ownerCheck = await pool.query('SELECT user_id FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
     if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can share' });
 
-    // Set status to 'pending' for invitations
+    // Set status to 'pending' for invitations, and normalized email
     await pool.query(
-      'INSERT INTO note_collaborators (note_id, user_email, can_edit, status) VALUES ($1, $2, $3, $4) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3',
-      [id, email, can_edit, 'pending']
+      'INSERT INTO note_collaborators (note_id, user_email, can_edit, status) VALUES ($1, $2, $3, $4) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3, status = EXCLUDED.status',
+      [id, targetEmail, can_edit, 'pending']
     );
 
-    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Invited ${email} (${can_edit ? 'Editor' : 'Viewer'})`]);
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Invited ${targetEmail} (${can_edit ? 'Editor' : 'Viewer'})`]);
     res.json({ message: 'Success' });
   } catch (err) {
     console.error(err);
