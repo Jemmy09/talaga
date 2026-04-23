@@ -98,7 +98,7 @@ async function loadPublicNote(token) {
 async function loadDashboard() {
     toggleSpinner(true, 'LOADING WORKSPACE');
     try {
-        await Promise.all([loadNotes(), loadInvitations()]);
+        await Promise.all([loadNotes(), loadNotifications()]);
     } catch (e) {
         showToast("Session update failed", "error");
     } finally {
@@ -653,6 +653,13 @@ function openNoteModal(noteId = null) {
                         </div>
                     `).join('')}
                 </div>
+
+                ${!note?.is_owner && !note?.can_edit ? `
+                    <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.1); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; display: flex; align-items: center; gap: 12px; color: #f43f5e; font-size: 0.9rem; font-weight: 500;">
+                        <i class="fas fa-lock" style="font-size: 1.1rem"></i>
+                        <span>This note is in <strong>Read-Only Mode</strong>. You do not have permission to edit this document.</span>
+                    </div>
+                ` : ''}
 
                 <div id="history-section" class="hidden" style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; border: 1px solid var(--glass-border)">
                     <h3 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--primary);">Activity History</h3>
