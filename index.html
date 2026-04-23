@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talaga</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Talaga | Premium Personal Notes</title>
     <link rel="icon" type="image/png" href="images/logo.png">
 
     <!-- SEO Meta Tags -->
-    <meta name="description"
-        content="Talaga is a modern, secure, and elegantly designed personal dashboard for organizing notes, to-do lists, and accounts.">
+    <meta name="description" content="Talaga is a modern, secure, and elegantly designed personal dashboard for organizing notes, to-do lists, and accounts.">
     <meta name="keywords" content="notes, productivity, personal organizer, talaga, secure notes">
     <meta name="author" content="Jemmy Francisco">
+    <meta name="theme-color" content="#0b0f1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Social Meta Tags -->
     <meta property="og:title" content="Talaga - Premium Personal Space">
@@ -29,90 +30,87 @@
     <!-- Stylesheet -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- Firebase Compat SDKs (Works on file:// and web) -->
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 </head>
-
 <body>
     <div id="app-root">
-        <!-- Mobile Header (Visible on small screens) -->
+        <!-- Mobile Header (hidden on tablet+) -->
         <header class="mobile-header">
             <div class="nav-brand">
                 <img src="images/logo.png" alt="Talaga Logo" class="logo-img">
                 <span class="brand-name">Talaga</span>
             </div>
-            <button id="menu-toggle" class="menu-toggle">
+            <button id="menu-toggle" class="menu-toggle" aria-label="Open navigation menu">
                 <i class="fas fa-bars"></i>
             </button>
         </header>
 
+        <!-- Nav Backdrop Overlay (mobile only) -->
+        <div id="nav-overlay"></div>
+
         <!-- Navigation Sidebar -->
-        <nav id="main-nav" class="hidden">
+        <nav id="main-nav" class="hidden" aria-label="Main navigation">
             <div class="nav-brand">
                 <img src="images/logo.png" alt="Talaga Logo" class="logo-img">
                 <span class="brand-name">Talaga</span>
             </div>
-            <ul class="nav-links">
-                <li data-view="dashboard" class="active">
+            <ul class="nav-links" role="list">
+                <li data-view="dashboard" class="active" role="listitem">
                     <i class="fas fa-th-large"></i> <span>Dashboard</span>
                 </li>
-                <li data-view="profile">
+                <li data-view="profile" role="listitem">
                     <i class="fas fa-user-circle"></i> <span>Profile</span>
                 </li>
-                <li data-view="settings">
+                <li data-view="settings" role="listitem">
                     <i class="fas fa-cog"></i> <span>Settings</span>
                 </li>
-                <li data-view="about">
+                <li data-view="about" role="listitem">
                     <i class="fas fa-info-circle"></i> <span>About</span>
                 </li>
-                <li data-view="feedback">
+                <li data-view="feedback" role="listitem">
                     <i class="fas fa-comment-dots"></i> <span>Feedback</span>
                 </li>
-                <li data-view="help">
+                <li data-view="help" role="listitem">
                     <i class="fas fa-question-circle"></i> <span>Help</span>
                 </li>
             </ul>
             <div class="nav-footer">
-                <button id="logout-btn" class="nav-item-btn">
+                <button id="logout-btn" class="nav-item-btn" aria-label="Logout">
                     <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
                 </button>
             </div>
         </nav>
 
         <!-- Main Content Area -->
-        <main id="main-content">
+        <main id="main-content" role="main">
             <div id="view-container">
-                <!-- Views will be injected here via app.js -->
+                <!-- Views injected by app.js -->
             </div>
         </main>
     </div>
 
     <!-- Spinner Overlay -->
-    <div id="loading-spinner" class="spinner-overlay hidden">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem">
+    <div id="loading-spinner" class="spinner-overlay hidden" role="status" aria-live="polite">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1.5rem">
             <div class="spinner"></div>
-            <p id="spinner-text"
-                style="color: var(--text-dim); font-size: 0.9rem; font-weight: 500; letter-spacing: 1px">LOADING SPACE
-            </p>
+            <p id="spinner-text" style="color:var(--text-dim);font-size:0.9rem;font-weight:500;letter-spacing:1px">LOADING</p>
         </div>
     </div>
 
-    <!-- Modals (Note editor, tutorial, etc.) -->
-    <div id="note-modal" class="modal-overlay hidden">
+    <!-- Note Modal -->
+    <div id="note-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Note editor">
         <div class="modal-content">
-            <input type="text" id="note-title-input" class="modal-input" placeholder="title">
-            <textarea id="note-content-input" class="modal-input"
-                placeholder="Any thoughts"></textarea>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem">
-                <button id="delete-modal-btn" class="delete-btn hidden" title="Delete Note">
+            <input type="text" id="note-title-input" class="modal-input" placeholder="title" aria-label="Note title">
+            <textarea id="note-content-input" class="modal-input" placeholder="Any thoughts" aria-label="Note content"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2rem;flex-wrap:wrap;gap:0.75rem">
+                <button id="delete-modal-btn" class="delete-btn hidden" title="Delete Note" aria-label="Delete note">
                     <i class="fas fa-trash"></i>
                 </button>
-                <div style="display: flex; gap: 1rem; margin-left: auto">
-                    <button onclick="closeModal()" class="nav-item-btn"
-                        style="background: transparent; border: none; padding: 0.8rem 1.5rem">Cancel</button>
+                <div style="display:flex;gap:0.75rem;margin-left:auto">
+                    <button onclick="closeModal()" class="nav-item-btn" style="width:auto;padding:0.75rem 1.25rem">Cancel</button>
                     <button id="save-note-btn" class="btn-primary">Save Note</button>
                 </div>
             </div>
@@ -120,8 +118,10 @@
     </div>
     <div id="modal-container" class="modal-overlay hidden"></div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" role="alert" aria-live="polite"></div>
+
     <!-- Main Logic -->
     <script src="app.js"></script>
 </body>
-
 </html>

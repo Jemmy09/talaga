@@ -93,11 +93,19 @@ function initApp() {
         showView(view);
     };
 
+    const navOverlay = document.getElementById('nav-overlay');
+    const toggleMenu = (forceClose = false) => {
+        const isOpen = forceClose ? false : !mainNav.classList.contains('open');
+        mainNav.classList.toggle('open', isOpen);
+        if (navOverlay) navOverlay.classList.toggle('active', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+    };
+
     document.querySelectorAll('.nav-links li').forEach(li => {
         li.onclick = () => {
             const view = li.dataset.view;
             if (view) navigate(view);
-            if (window.innerWidth <= 768) mainNav.classList.remove('open');
+            if (window.innerWidth <= 768) toggleMenu(true);
         };
     });
 
@@ -105,9 +113,7 @@ function initApp() {
     if (logoutBtn) {
         logoutBtn.onclick = () => {
             toggleSpinner(true, 'SIGNING OUT');
-            auth.signOut().then(() => {
-                showToast('Signed out successfully', 'success');
-            });
+            auth.signOut().then(() => showToast('Signed out successfully', 'success'));
         };
     }
 
@@ -115,16 +121,13 @@ function initApp() {
     if (menuToggle) {
         menuToggle.onclick = (e) => {
             e.stopPropagation();
-            mainNav.classList.toggle('open');
+            toggleMenu();
         };
     }
 
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && mainNav.classList.contains('open') && !mainNav.contains(e.target) && !menuToggle.contains(e.target)) {
-            mainNav.classList.remove('open');
-        }
-    });
+    if (navOverlay) {
+        navOverlay.onclick = () => toggleMenu(true);
+    }
 }
 
 async function showView(viewName) {
@@ -143,10 +146,8 @@ async function showView(viewName) {
     // Sidebar Visibility Control
     if (viewName === 'login' || viewName === 'register') {
         mainNav.classList.add('hidden');
-        document.getElementById('app-root').style.flexDirection = 'column';
     } else {
         mainNav.classList.remove('hidden');
-        document.getElementById('app-root').style.flexDirection = (window.innerWidth > 768) ? 'row' : 'column';
     }
 
     // Active Tab Styling
@@ -197,7 +198,7 @@ function renderLogin() {
 function renderDashboard() {
     if (mainNav) mainNav.classList.remove('hidden');
     viewContainer.innerHTML = `
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem">
+        <header class="dashboard-header">
             <div><h1>Digital Workspace</h1><p>Hello, ${currentUser?.displayName || 'User'}</p></div>
             <button id="add-note-btn" class="btn-primary"><i class="fas fa-plus"></i> New Note</button>
         </header>
