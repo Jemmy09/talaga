@@ -129,6 +129,56 @@ function initApp() {
             }
         }
     });
+
+    // --- Core Navigation Listeners ---
+    window.onhashchange = () => {
+        const view = window.location.hash.replace('#', '') || (currentUser ? 'dashboard' : 'login');
+        showView(view);
+    };
+
+    const navOverlay = document.getElementById('nav-overlay');
+    const toggleMenu = (forceClose = false) => {
+        const isOpen = forceClose ? false : !mainNav.classList.contains('open');
+        mainNav.classList.toggle('open', isOpen);
+        if (navOverlay) navOverlay.classList.toggle('active', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+    };
+    window.toggleMenu = toggleMenu;
+
+    if (navOverlay) {
+        navOverlay.onclick = () => toggleMenu(true);
+    }
+
+    document.querySelectorAll('.nav-links li').forEach(li => {
+        li.onclick = () => {
+            const view = li.dataset.view;
+            if (view) navigate(view);
+            if (window.innerWidth <= 768) toggleMenu(true);
+        };
+    });
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.onclick = () => {
+            toggleSpinner(true, 'SIGNING OUT');
+            currentUser = null;
+            notes = [];
+            if (window.innerWidth <= 768) toggleMenu(true);
+            navigate('login');
+            auth.signOut().finally(() => {
+                toggleSpinner(false);
+                showToast('Signed out successfully', 'success');
+            });
+        };
+    }
+
+    const menuToggle = document.getElementById('menu-toggle');
+    if (menuToggle) {
+        menuToggle.onclick = (e) => {
+            e.stopPropagation();
+            toggleMenu();
+        };
+    }
 }
 
 async function loadPublicNote(token) {
@@ -333,72 +383,10 @@ async function checkUserStatus() {
     }
 }
 
-    // Keyboard Shortcuts (Functional & Responsive) - Only add once
-    if (!window.shortcutsInitialized) {
-        document.addEventListener('keydown', (e) => {
-            if (e.altKey && e.code === 'KeyN') {
-                e.preventDefault();
-                if (currentUser && currentView !== 'login') openNoteModal();
-            }
-            if (e.key === 'Escape') {
-                closeModal();
-            }
-        });
-        window.shortcutsInitialized = true;
-    }
-
-    window.onhashchange = () => {
-        const view = window.location.hash.replace('#', '') || (currentUser ? 'dashboard' : 'login');
-        showView(view);
-    };
-
-    const navOverlay = document.getElementById('nav-overlay');
-    const toggleMenu = (forceClose = false) => {
-        const isOpen = forceClose ? false : !mainNav.classList.contains('open');
-        mainNav.classList.toggle('open', isOpen);
-        if (navOverlay) navOverlay.classList.toggle('active', isOpen);
-        document.body.style.overflow = isOpen ? 'hidden' : '';
-    };
-
-    document.querySelectorAll('.nav-links li').forEach(li => {
-        li.onclick = () => {
-            const view = li.dataset.view;
-            if (view) navigate(view);
-            if (window.innerWidth <= 768) toggleMenu(true);
-        };
-    });
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = () => {
-            toggleSpinner(true, 'SIGNING OUT');
-            // Instant state cleanup
-            currentUser = null;
-            notes = [];
-            if (window.innerWidth <= 768) toggleMenu(true);
-            
-            // Redirect immediately
-            navigate('login');
-            
-            auth.signOut().finally(() => {
-                toggleSpinner(false);
-                showToast('Signed out successfully', 'success');
-            });
-        };
-    }
-
-    const menuToggle = document.getElementById('menu-toggle');
-    if (menuToggle) {
-        menuToggle.onclick = (e) => {
-            e.stopPropagation();
-            toggleMenu();
-        };
-    }
-
-    if (navOverlay) {
-        navOverlay.onclick = () => toggleMenu(true);
-    }
-}
+// View State Management
+let currentView = '';
+let notes = [];
+let currentUser = null;
 
 async function showView(viewName) {
     if (!viewContainer || !mainNav) return;
