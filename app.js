@@ -63,6 +63,37 @@ function initApp() {
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
     let isInitialLoad = true;
+    // Handle shared note links
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedToken = urlParams.get('note');
+    if (sharedToken) {
+        loadPublicNote(sharedToken);
+    } else {
+        checkUserStatus();
+    }
+}
+
+async function loadPublicNote(token) {
+    toggleSpinner(true, 'FETCHING SHARED NOTE');
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/public/notes/${token}`);
+        if (!res.ok) throw new Error("Link expired or private");
+        const note = await res.json();
+        
+        // Temporarily put note in global array for modal to find it
+        notes = [note]; 
+        openNoteModal(note.id);
+        
+        showToast("Viewing shared note", "info");
+    } catch (e) {
+        showToast(e.message, "error");
+        checkUserStatus();
+    } finally {
+        toggleSpinner(false);
+    }
+}
+
+function checkUserStatus() {
     auth.onAuthStateChanged(async (user) => {
         currentUser = user;
         if (user) {
@@ -471,7 +502,7 @@ function openNoteModal(noteId = null) {
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
         if (note?.is_owner) {
             document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
-            document.getElementById('share-note-btn').onclick = () => shareNote(noteId);
+            document.getElementById('share-note-btn').onclick = () => openSharingModal(noteId);
         }
         document.getElementById('view-history-btn').onclick = () => toggleHistory(noteId);
     };
@@ -658,12 +689,142 @@ async function toggleHistory(id) {
     }
 }
 
-async function shareNote(id) {
-    const email = prompt("Enter the email of the person you want to share this note with:");
-    if (!email || !email.includes('@')) return;
+async function openSharingModal(id) {
+    const note = notes.find(n => n.id == id);
+    if (!note) return;
 
-    const canEdit = confirm("Do you want to allow this person to EDIT the note?\n\nOK = Yes (Editor)\nCancel = No (View Only)");
+    const modal = document.getElementById('note-modal');
+    const viewContainer = modal.querySelector('.modal-content');
+    
+    toggleSpinner(true, 'LOADING ACCESS');
+    let collaborators = [];
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}/collaborators`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        collaborators = await res.json();
+    } catch (e) {}
+    toggleSpinner(false);
 
+    const renderSharingView = () => {
+        const config = note.sharing_config || { access_type: 'restricted', public_role: 'viewer', share_token: null };
+        const shareLink = `${window.location.origin}${window.location.pathname}?note=${config.share_token}`;
+
+        viewContainer.innerHTML = `
+            <div style="animation: slideUp 0.4s ease-out">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem">
+                    <h2 style="font-size: 1.5rem; font-weight: 800; color: white">Share "${note.title}"</h2>
+                    <button onclick="openNoteModal('${id}')" class="delete-btn"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div style="margin-bottom: 2rem">
+                    <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px">Add people</h3>
+                    <div style="display: flex; gap: 0.75rem">
+                        <input id="share-email-input" class="modal-input" placeholder="Enter email address" style="flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem 1rem;">
+                        <select id="share-role-input" style="width: auto; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; padding: 0 1rem;">
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                        </select>
+                        <button id="confirm-share-btn" class="btn-primary" style="padding: 0 1.5rem">Invite</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem">
+                    <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px">People with access</h3>
+                    <div id="collaborators-list" style="display: flex; flex-direction: column; gap: 1rem">
+                        <div style="display: flex; justify-content: space-between; align-items: center">
+                            <div style="display: flex; align-items: center; gap: 0.75rem">
+                                <div style="width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white">${note.owner_name ? note.owner_name[0].toUpperCase() : 'Y'}</div>
+                                <div>
+                                    <div style="font-weight: 600; color: white">${note.owner_name || 'You'} (Owner)</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-dim)">Creator of this note</div>
+                                </div>
+                            </div>
+                        </div>
+                        ${collaborators.map(c => `
+                            <div style="display: flex; justify-content: space-between; align-items: center">
+                                <div style="display: flex; align-items: center; gap: 0.75rem">
+                                    <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white">${c.user_email[0].toUpperCase()}</div>
+                                    <div>
+                                        <div style="font-weight: 600; color: white">${c.user_email}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-dim)">${c.can_edit ? 'Editor' : 'Viewer'}</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem">
+                                    <button onclick="updateCollaboratorRole('${id}', '${c.user_email}', ${!c.can_edit})" class="delete-btn" style="color: var(--primary)" title="Change Role"><i class="fas fa-sync-alt"></i></button>
+                                    <button onclick="removeCollaborator('${id}', '${c.user_email}')" class="delete-btn" style="color: var(--accent)" title="Remove Access"><i class="fas fa-user-minus"></i></button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 1.5rem; margin-top: 2rem">
+                    <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px">General access</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--glass-border)">
+                        <div style="display: flex; align-items: center; gap: 1rem">
+                            <div style="width: 40px; height: 40px; background: ${config.access_type === 'public' ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${config.access_type === 'public' ? '#10b981' : '#f43f5e'}">
+                                <i class="fas ${config.access_type === 'public' ? 'fa-globe' : 'fa-lock'}"></i>
+                            </div>
+                            <div>
+                                <select id="general-access-select" style="background: transparent; border: none; color: white; font-weight: 600; font-size: 0.9rem; padding: 0; width: auto; cursor: pointer;">
+                                    <option value="restricted" ${config.access_type === 'restricted' ? 'selected' : ''}>Restricted</option>
+                                    <option value="public" ${config.access_type === 'public' ? 'selected' : ''}>Anyone with the link</option>
+                                </select>
+                                <div style="font-size: 0.75rem; color: var(--text-dim)">
+                                    ${config.access_type === 'public' ? 'Anyone on the internet with this link can view' : 'Only people added can open with this link'}
+                                </div>
+                            </div>
+                        </div>
+                        ${config.access_type === 'public' ? `
+                            <select id="public-role-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem">
+                                <option value="viewer" ${config.public_role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                <option value="editor" ${config.public_role === 'editor' ? 'selected' : ''}>Editor</option>
+                            </select>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center">
+                    <button id="copy-link-btn" class="btn-primary" style="background: rgba(255,255,255,0.05); color: var(--primary); border: 1px solid var(--glass-border); box-shadow: none">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                    <button onclick="openNoteModal('${id}')" class="btn-primary" style="padding: 0.75rem 2rem">Done</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('confirm-share-btn').onclick = () => {
+            const email = document.getElementById('share-email-input').value.trim();
+            const canEdit = document.getElementById('share-role-input').value === 'editor';
+            if (email) shareWithUser(id, email, canEdit);
+        };
+
+        document.getElementById('general-access-select').onchange = (e) => {
+            updateGeneralAccess(id, e.target.value, config.public_role);
+        };
+
+        if (document.getElementById('public-role-select')) {
+            document.getElementById('public-role-select').onchange = (e) => {
+                updateGeneralAccess(id, config.access_type, e.target.value);
+            };
+        }
+
+        document.getElementById('copy-link-btn').onclick = () => {
+            if (config.access_type === 'restricted') {
+                showToast("Link is restricted. Change to 'Public' to share.", "warning");
+            }
+            navigator.clipboard.writeText(shareLink).then(() => {
+                showToast("Link copied to clipboard", "success");
+            });
+        };
+    };
+
+    renderSharingView();
+}
+
+async function shareWithUser(id, email, canEdit) {
     toggleSpinner(true, 'SHARING');
     try {
         const token = await currentUser.getIdToken();
@@ -673,16 +834,56 @@ async function shareNote(id) {
             body: JSON.stringify({ email, can_edit: canEdit })
         });
         if (res.ok) {
-            showToast(`Note shared with ${email} (${canEdit ? 'Editor' : 'Viewer'})`, "success");
+            showToast(`Invited ${email}`, "success");
+            openSharingModal(id); // Refresh
         } else {
             const err = await res.json();
-            showToast(err.error || "Failed to share note", "error");
+            showToast(err.error || "Failed", "error");
         }
-    } catch (e) {
-        showToast("Network error", "error");
-    } finally {
-        toggleSpinner(false);
-    }
+    } catch (e) { showToast("Error", "error"); }
+    finally { toggleSpinner(false); }
+}
+
+async function updateGeneralAccess(id, access_type, public_role) {
+    toggleSpinner(true, 'UPDATING ACCESS');
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}/access`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ access_type, public_role })
+        });
+        if (res.ok) {
+            const newConfig = await res.json();
+            const note = notes.find(n => n.id == id);
+            if (note) note.sharing_config = newConfig;
+            openSharingModal(id); // Refresh
+            showToast("Access updated", "success");
+        }
+    } catch (e) {}
+    finally { toggleSpinner(false); }
+}
+
+async function updateCollaboratorRole(id, email, canEdit) {
+    // Re-use shareWithUser as it handles update (ON CONFLICT DO UPDATE)
+    shareWithUser(id, email, canEdit);
+}
+
+async function removeCollaborator(id, email) {
+    if (!confirm(`Remove ${email}?`)) return;
+    toggleSpinner(true, 'REMOVING');
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}/collaborators/${email}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast("Removed", "success");
+            openSharingModal(id);
+        }
+    } catch (e) {}
+    finally { toggleSpinner(false); }
 }
 
 function openLightbox(src) {

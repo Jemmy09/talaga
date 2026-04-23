@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const fs = require('fs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 // Global SSL Bypass for Aiven/Render connectivity
@@ -31,6 +32,7 @@ const pool = new Pool({
           description TEXT,
           content TEXT,
           attachments JSONB DEFAULT '[]',
+          sharing_config JSONB DEFAULT '{"access_type": "restricted", "public_role": "viewer", "share_token": null}',
           category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -41,6 +43,7 @@ const pool = new Pool({
     try { await pool.query('ALTER TABLE notes ADD COLUMN owner_name VARCHAR(255);'); } catch (e) {}
     try { await pool.query('ALTER TABLE notes ADD COLUMN last_editor_name VARCHAR(255);'); } catch (e) {}
     try { await pool.query('ALTER TABLE notes ADD COLUMN attachments JSONB DEFAULT \'[]\';'); } catch (e) {}
+    try { await pool.query('ALTER TABLE notes ADD COLUMN sharing_config JSONB DEFAULT \'{"access_type": "restricted", "public_role": "viewer", "share_token": null}\';'); } catch (e) {}
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS note_collaborators (
@@ -141,22 +144,40 @@ app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
     }
 });
 
-// 1. Get all notes for the authenticated user (including shared ones)
+// 1. Get all notes for a user (owned + shared)
 app.get('/api/notes', authenticateUser, async (req, res) => {
+  const userEmail = req.user.email;
   try {
-    const userEmail = req.user.email;
     const result = await pool.query(
-      `SELECT n.*, (n.user_id = $1) as is_owner 
+      `SELECT DISTINCT n.*, 
+       (n.user_id = $1) as is_owner,
+       COALESCE(c.can_edit, false) as can_edit
        FROM notes n
-       LEFT JOIN note_collaborators c ON n.id = c.note_id
+       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
        WHERE n.user_id = $1 OR c.user_email = $2
-       ORDER BY n.created_at DESC`,
+       ORDER BY n.updated_at DESC`,
       [req.user.uid, userEmail]
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('❌ Database Query Error:', err.message);
-    res.status(500).json({ error: 'Database error', details: err.message });
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 1.5 Get a public note by token
+app.get('/api/public/notes/:token', async (req, res) => {
+  const { token } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT * FROM notes WHERE sharing_config->>'share_token' = $1 AND sharing_config->>'access_type' = 'public'",
+      [token]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Note not found or private' });
+    
+    const note = result.rows[0];
+    res.json({ ...note, is_owner: false, is_public: true, can_edit: note.sharing_config.public_role === 'editor' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
@@ -244,7 +265,36 @@ app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
   }
 });
 
-// 5. Share a note
+// 5. Update sharing/access level
+app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  const { access_type, public_role } = req.body;
+  const userName = req.user.name || req.user.email || 'Anonymous';
+
+  try {
+    const ownerCheck = await pool.query('SELECT sharing_config FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
+    if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can change access' });
+
+    let config = ownerCheck.rows[0].sharing_config || {};
+    config.access_type = access_type || config.access_type;
+    config.public_role = public_role || config.public_role;
+    
+    if (config.access_type === 'public' && !config.share_token) {
+      config.share_token = crypto.randomBytes(16).toString('hex');
+    }
+
+    await pool.query('UPDATE notes SET sharing_config = $1 WHERE id = $2', [JSON.stringify(config), id]);
+    
+    // Log history
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Changed general access to ${config.access_type}`]);
+
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 6. Share with a specific user
 app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { email, can_edit } = req.body;
@@ -253,47 +303,52 @@ app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
   try {
-    // Only owner can share
     const ownerCheck = await pool.query('SELECT user_id FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
-    if (ownerCheck.rowCount === 0) {
-      return res.status(403).json({ error: 'Only the owner can share this note' });
-    }
+    if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can share' });
 
     await pool.query(
       'INSERT INTO note_collaborators (note_id, user_email, can_edit) VALUES ($1, $2, $3) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3',
-      [id, email, can_edit !== false]
+      [id, email, can_edit]
     );
 
-    // Log history
-    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Shared note with ${email} (${can_edit !== false ? 'Edit' : 'View'} permission)`]);
-
-    res.json({ message: `Note shared with ${email}` });
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Shared with ${email} (${can_edit ? 'Editor' : 'Viewer'})`]);
+    res.json({ message: 'Success' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// 6. Get collaborators for a note
+// 7. Remove a collaborator
+app.delete('/api/notes/:id/collaborators/:email', authenticateUser, async (req, res) => {
+  const { id, email } = req.params;
+  const userName = req.user.name || req.user.email || 'Anonymous';
+  try {
+    const ownerCheck = await pool.query('SELECT user_id FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
+    if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can remove users' });
+
+    await pool.query('DELETE FROM note_collaborators WHERE note_id = $1 AND user_email = $2', [id, email]);
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Removed ${email} from collaborators`]);
+    res.json({ message: 'Removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 8. Get collaborators & history
 app.get('/api/notes/:id/collaborators', authenticateUser, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT user_email, can_edit FROM note_collaborators WHERE note_id = $1', [id]);
     res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
-// 7. Get history for a note
 app.get('/api/notes/:id/history', authenticateUser, async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 50', [id]);
+    const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 30', [id]);
     res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
 // 7. Submit feedback
