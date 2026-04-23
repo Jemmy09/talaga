@@ -75,7 +75,8 @@ function initApp() {
             window.history.replaceState({}, document.title, window.location.pathname);
             await loadPublicNote(sharedToken);
         } else if (isInitialLoad) {
-            // Normal dashboard flow
+            // Normal flow: Ensure badge is updated if logged in
+            if (currentUser) loadNotifications();
             checkUserStatus();
         }
         
@@ -90,8 +91,10 @@ async function loadPublicNote(token) {
         if (!res.ok) throw new Error("Link expired or private");
         const note = await res.json();
         
-        // Temporarily put note in global array for modal to find it
-        notes = [note]; 
+        // Add to local notes if not already present, so the modal can find it
+        if (!notes.some(n => n.id === note.id)) {
+            notes.push(note);
+        }
         openNoteModal(note.id);
         
         showToast("Viewing shared note", "info");
