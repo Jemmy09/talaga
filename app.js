@@ -874,15 +874,29 @@ async function updateGeneralAccess(id, access_type, public_role) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ access_type, public_role })
         });
+        
         if (res.ok) {
             const newConfig = await res.json();
-            const note = notes.find(n => n.id == id);
-            if (note) note.sharing_config = newConfig;
-            openSharingModal(id); // Refresh
+            // Update the local notes array to keep UI in sync
+            const noteIdx = notes.findIndex(n => n.id == id);
+            if (noteIdx !== -1) {
+                notes[noteIdx].sharing_config = newConfig;
+            }
+            
             showToast("Access updated", "success");
+            // Re-render sharing modal with new data
+            openSharingModal(id); 
+            // Also refresh the dashboard icons in the background
+            renderNotes();
+        } else {
+            const err = await res.json();
+            showToast(err.error || "Failed to update access", "error");
         }
-    } catch (e) {}
-    finally { toggleSpinner(false); }
+    } catch (e) {
+        showToast("Network error", "error");
+    } finally {
+        toggleSpinner(false);
+    }
 }
 
 async function updateCollaboratorRole(id, email, canEdit) {

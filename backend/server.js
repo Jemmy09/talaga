@@ -275,21 +275,36 @@ app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
     const ownerCheck = await pool.query('SELECT sharing_config FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
     if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can change access' });
 
-    let config = ownerCheck.rows[0].sharing_config || {};
-    config.access_type = access_type || config.access_type;
-    config.public_role = public_role || config.public_role;
+    let config = ownerCheck.rows[0].sharing_config;
     
+    // Ensure config is a valid object
+    if (!config || typeof config !== 'object') {
+      config = { access_type: 'restricted', public_role: 'viewer', share_token: null };
+    }
+
+    // Explicitly update fields
+    if (access_type) config.access_type = access_type;
+    if (public_role) config.public_role = public_role;
+    
+    // Generate token if switching to public for the first time
     if (config.access_type === 'public' && !config.share_token) {
       config.share_token = crypto.randomBytes(16).toString('hex');
     }
 
-    await pool.query('UPDATE notes SET sharing_config = $1 WHERE id = $2', [JSON.stringify(config), id]);
+    const updateRes = await pool.query(
+      'UPDATE notes SET sharing_config = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING sharing_config', 
+      [JSON.stringify(config), id]
+    );
     
-    // Log history
-    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Changed general access to ${config.access_type}`]);
+    const newConfig = updateRes.rows[0].sharing_config;
 
-    res.json(config);
+    // Log history
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', 
+      [id, userName, `Changed access to ${newConfig.access_type} (${newConfig.public_role})`]);
+
+    res.json(newConfig);
   } catch (err) {
+    console.error('Access Update Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
