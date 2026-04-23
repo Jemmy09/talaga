@@ -1,4 +1,4 @@
-// Talaga Premium Notes - Elite Core v3.6 (Absolute Masterpiece)
+// Talaga Premium Notes - Elite Core v3.7 (Absolute Masterpiece)
 // -------------------------------------------------------------
 
 function toggleSpinner(show, text = 'LOADING SPACE') {
