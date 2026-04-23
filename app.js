@@ -458,7 +458,7 @@ function openNoteModal(noteId = null) {
 
                 <textarea id="note-content-input" class="modal-input" placeholder="Any thoughts" style="font-size: 1.2rem; min-height: 400px; line-height: 1.8; resize: none; background: rgba(255,255,255,0.01); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem">${note ? (note.content || '') : ''}</textarea>
                 <div style="display: flex; gap: 1rem">
-                    <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Sync Changes</button>
+                    <button id="save-note-btn" class="btn-primary" style="flex: 2; padding: 1.25rem">Save Changes</button>
                     ${noteId ? `<button id="cancel-edit-btn" class="btn-primary" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted)">Discard</button>` : ''}
                 </div>
             </div>
@@ -470,8 +470,16 @@ function openNoteModal(noteId = null) {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
             const category = document.getElementById('note-category-input').value;
+            
             if (!title && !content) return;
-            toggleSpinner(true, 'SYNCHRONIZING');
+
+            // Professional check: Only sync if changes were actually made
+            if (note && note.title === title && note.content === content && (note.category || 'info') === category) {
+                closeModal();
+                return;
+            }
+
+            toggleSpinner(true, 'SAVING');
             const token = await currentUser.getIdToken();
             const method = noteId ? 'PUT' : 'POST';
             const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
