@@ -385,8 +385,6 @@ async function checkUserStatus() {
 
 // View State Management
 let currentView = '';
-let notes = [];
-let currentUser = null;
 
 async function showView(viewName) {
     if (!viewContainer || !mainNav) return;
