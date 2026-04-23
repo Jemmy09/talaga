@@ -134,7 +134,7 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
   try {
     const result = await pool.query(
       'INSERT INTO notes (user_id, title, description, content, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [req.user.uid, title, description, content, category]
+      [req.user.uid, title || null, description || null, content || null, category || 'info']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -151,7 +151,7 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   try {
     const result = await pool.query(
       'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND user_id = $6 RETURNING *',
-      [title, description, content, category, id, req.user.uid]
+      [title || null, description || null, content || null, category || 'info', id, req.user.uid]
     );
     
     if (result.rowCount === 0) {
@@ -159,8 +159,8 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Update Error:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
 
