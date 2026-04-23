@@ -3,11 +3,21 @@ const { Pool } = require('pg');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 require('dotenv').config();
 
 // Global SSL Bypass for Aiven/Render connectivity
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+// --- Email Transporter Setup ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // --- PostgreSQL Connection (Aiven) ---
 const pool = new Pool({
@@ -514,7 +524,32 @@ app.post('/api/feedback', authenticateUser, async (req, res) => {
       'INSERT INTO feedback (user_id, user_name, message) VALUES ($1, $2, $3)',
       [req.user.uid, req.user.name || 'Anonymous', text]
     );
-    res.status(201).json({ message: 'Feedback received' });
+
+    // 2. Email Notification (Optional/Conditional)
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      try {
+        await transporter.sendMail({
+          from: `"Talaga Workspace" <${process.env.EMAIL_USER}>`,
+          to: 'Jemmyfrancisco30@gmail.com',
+          subject: `✨ New Feedback from ${req.user.name || 'a User'}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; color: #333; background: #f9f9f9; border-radius: 10px;">
+              <h2 style="color: #6366f1;">New Feedback Received!</h2>
+              <p><strong>From:</strong> ${req.user.name || 'Anonymous'} (${req.user.email || 'No email provided'})</p>
+              <div style="background: white; padding: 15px; border-left: 4px solid #6366f1; margin: 20px 0;">
+                "${text}"
+              </div>
+              <p style="font-size: 0.8rem; color: #777;">This is an automated notification from your Talaga Workspace.</p>
+            </div>
+          `
+        });
+        console.log('📧 [MAIL] Feedback email sent to owner');
+      } catch (mailErr) {
+        console.error('❌ [MAIL ERROR]:', mailErr.message);
+      }
+    }
+
+    res.json({ message: 'Feedback stored successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
