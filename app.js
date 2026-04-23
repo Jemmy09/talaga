@@ -147,8 +147,8 @@ function updateNotificationBadge() {
 }
 
 function renderNotificationsView() {
-    const content = document.getElementById('main-content');
-    content.innerHTML = `
+    if (!viewContainer) return;
+    viewContainer.innerHTML = `
         <div class="dashboard-header view-enter">
             <div>
                 <h1 style="font-weight: 800; letter-spacing: -1px; margin-bottom: 0.25rem">Notifications</h1>
@@ -387,6 +387,7 @@ function renderLogin() {
 
 function renderDashboard() {
     if (mainNav) mainNav.classList.remove('hidden');
+    if (!viewContainer) return;
     viewContainer.innerHTML = `
         <header class="dashboard-header view-enter">
             <div>
