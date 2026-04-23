@@ -471,9 +471,15 @@ function openNoteModal(noteId = null) {
                         <option value="personal" ${note?.category === 'personal' ? 'selected' : ''}>Personal</option>
                         <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
                     </select>
-                    <div style="flex: 1; position: relative;">
-                        <i class="fas fa-image" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-dim);"></i>
-                        <input id="note-image-input" class="modal-input" placeholder="Image URL (optional)" value="${note?.image_url || ''}" style="margin-bottom: 0; padding-left: 2.8rem; font-size: 0.85rem; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px;">
+                    <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="file" id="note-image-picker" accept="image/*" style="display: none;">
+                        <button id="trigger-image-picker" class="delete-btn" style="color: var(--primary); background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; width: auto; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; border-radius: 10px;">
+                            <i class="fas fa-paperclip"></i> Attach Image
+                        </button>
+                        <div id="image-preview-container" style="flex: 1; height: 40px; border-radius: 8px; border: 1px dashed var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(255,255,255,0.02)">
+                            ${note?.image_url ? `<img src="${note.image_url}" style="height: 100%; width: auto;">` : '<span style="color: var(--text-dim); font-size: 0.7rem;">No file chosen</span>'}
+                        </div>
+                        ${note?.image_url ? `<button id="remove-image-btn" class="delete-btn" style="color: #f43f5e;"><i class="fas fa-times"></i></button>` : ''}
                     </div>
                 </div>
 
@@ -485,18 +491,45 @@ function openNoteModal(noteId = null) {
             </div>
         `;
 
+        let currentImageData = note?.image_url || null;
+
+        document.getElementById('trigger-image-picker').onclick = () => document.getElementById('note-image-picker').click();
+        
+        document.getElementById('note-image-picker').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast("File too large (Max 2MB)", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentImageData = event.target.result;
+                document.getElementById('image-preview-container').innerHTML = `<img src="${currentImageData}" style="height: 100%; width: auto;">`;
+                showToast("Image attached", "success");
+            };
+            reader.readAsDataURL(file);
+        };
+
+        if (document.getElementById('remove-image-btn')) {
+            document.getElementById('remove-image-btn').onclick = () => {
+                currentImageData = null;
+                document.getElementById('image-preview-container').innerHTML = '<span style="color: var(--text-dim); font-size: 0.7rem;">No file chosen</span>';
+                document.getElementById('remove-image-btn').style.display = 'none';
+            };
+        }
+
         if (noteId) document.getElementById('cancel-edit-btn').onclick = () => renderReadView();
 
         document.getElementById('save-note-btn').onclick = async () => {
             const title = document.getElementById('note-title-input').value.trim();
             const content = document.getElementById('note-content-input').value.trim();
             const category = document.getElementById('note-category-input').value;
-            const image_url = document.getElementById('note-image-input').value.trim();
             
             if (!title && !content) return;
 
             // Professional check: Only sync if changes were actually made
-            if (note && note.title === title && note.content === content && (note.category || 'info') === category && note.image_url === image_url) {
+            if (note && note.title === title && note.content === content && (note.category || 'info') === category && note.image_url === currentImageData) {
                 closeModal();
                 return;
             }
@@ -509,7 +542,7 @@ function openNoteModal(noteId = null) {
                 const res = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ title, content, category, image_url })
+                    body: JSON.stringify({ title, content, category, image_url: currentImageData })
                 });
                 
                 if (res.ok) { 
