@@ -464,7 +464,10 @@ function openNoteModal(noteId = null) {
                     </div>
                     <div style="display: flex; gap: 0.75rem">
                         <button id="view-history-btn" class="delete-btn" title="Activity History" style="color: #6366f1; background: rgba(99, 102, 241, 0.05)"><i class="fas fa-history"></i></button>
-                        ${note?.is_owner ? `<button id="share-note-btn" class="delete-btn" title="Share Note" style="color: #10b981; background: rgba(16, 185, 129, 0.05)"><i class="fas fa-share-alt"></i></button>` : ''}
+                        ${note?.is_owner ? `
+                            <button id="copy-quick-link-btn" class="delete-btn" title="Copy Share Link" style="color: #10b981; background: rgba(16, 185, 129, 0.05)"><i class="fas fa-link"></i></button>
+                            <button id="manage-note-btn" class="delete-btn" title="Manage Note" style="color: var(--secondary); background: rgba(168, 85, 247, 0.05)"><i class="fas fa-user-cog"></i></button>
+                        ` : ''}
                         ${(note?.is_owner || note?.can_edit !== false) ? `<button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>` : ''}
                         ${note?.is_owner ? `<button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>` : ''}
                         <button onclick="closeModal()" class="delete-btn" title="Close"><i class="fas fa-times"></i></button>
@@ -502,7 +505,17 @@ function openNoteModal(noteId = null) {
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
         if (note?.is_owner) {
             document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
-            document.getElementById('share-note-btn').onclick = () => openSharingModal(noteId);
+            document.getElementById('manage-note-btn').onclick = () => openSharingModal(noteId);
+            document.getElementById('copy-quick-link-btn').onclick = () => {
+                const config = note.sharing_config || { share_token: null };
+                if (!config.share_token || config.access_type === 'restricted') {
+                    showToast("Change access to 'Public' in Manage Note first", "warning");
+                    openSharingModal(noteId);
+                    return;
+                }
+                const link = `${window.location.origin}${window.location.pathname}?note=${config.share_token}`;
+                navigator.clipboard.writeText(link).then(() => showToast("Link copied!", "success"));
+            };
         }
         document.getElementById('view-history-btn').onclick = () => toggleHistory(noteId);
     };
