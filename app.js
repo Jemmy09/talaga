@@ -95,6 +95,79 @@ async function loadPublicNote(token) {
     }
 }
 
+async function loadDashboard() {
+    toggleSpinner(true, 'LOADING WORKSPACE');
+    try {
+        await Promise.all([loadNotes(), loadInvitations()]);
+    } catch (e) {
+        showToast("Session update failed", "error");
+    } finally {
+        toggleSpinner(false);
+    }
+}
+
+let invitations = [];
+async function loadInvitations() {
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/invitations`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        invitations = await res.json();
+        renderInvitations();
+    } catch (e) {}
+}
+
+function renderInvitations() {
+    const container = document.getElementById('invitations-container');
+    if (!container) return;
+
+    if (invitations.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+    container.innerHTML = `
+        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: white;"><i class="fas fa-envelope-open-text" style="color: var(--primary); margin-right: 10px;"></i> Pending Invitations</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 3rem;">
+            ${invitations.map(inv => `
+                <div class="note-card" style="border-color: var(--primary); background: rgba(99, 102, 241, 0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 1rem;">${inv.title}</h3>
+                        <span class="note-category-badge badge-info">Invite</span>
+                    </div>
+                    <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">Invited by <strong>${inv.owner_name || 'Collaborator'}</strong> to be an <strong>${inv.can_edit ? 'Editor' : 'Viewer'}</strong>.</p>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button onclick="respondToInvite(${inv.id}, 'accept')" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem;">Accept</button>
+                        <button onclick="respondToInvite(${inv.id}, 'reject')" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; background: rgba(244, 63, 94, 0.1); color: var(--accent); box-shadow: none; border: 1px solid rgba(244,63,94,0.2);">Decline</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function respondToInvite(id, action) {
+    toggleSpinner(true, action === 'accept' ? 'ACCEPTING' : 'DECLINING');
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/invitations/${id}/${action}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast(action === 'accept' ? "Invitation accepted!" : "Invitation declined", "success");
+            loadDashboard();
+        }
+    } catch (e) {
+        showToast("Action failed", "error");
+    } finally {
+        toggleSpinner(false);
+    }
+}
+
 function checkUserStatus() {
     auth.onAuthStateChanged(async (user) => {
         currentUser = user;
@@ -771,11 +844,13 @@ async function openSharingModal(id) {
                                     <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white">${c.user_email[0].toUpperCase()}</div>
                                     <div>
                                         <div style="font-weight: 600; color: white">${c.user_email}</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-dim)">${c.can_edit ? 'Editor' : 'Viewer'}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-dim)">
+                                            ${c.status === 'pending' ? '<span style="color: var(--warning)">Invite Pending</span>' : (c.can_edit ? 'Editor' : 'Viewer')}
+                                        </div>
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem">
-                                    <button onclick="updateCollaboratorRole('${id}', '${c.user_email}', ${!c.can_edit})" class="delete-btn" style="color: var(--primary)" title="Change Role"><i class="fas fa-sync-alt"></i></button>
+                                    ${c.status !== 'pending' ? `<button onclick="updateCollaboratorRole('${id}', '${c.user_email}', ${!c.can_edit})" class="delete-btn" style="color: var(--primary)" title="Change Role"><i class="fas fa-sync-alt"></i></button>` : ''}
                                     <button onclick="removeCollaborator('${id}', '${c.user_email}')" class="delete-btn" style="color: var(--accent)" title="Remove Access"><i class="fas fa-user-minus"></i></button>
                                 </div>
                             </div>

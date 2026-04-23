@@ -50,9 +50,14 @@ const pool = new Pool({
           note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,
           user_email VARCHAR(255) NOT NULL,
           can_edit BOOLEAN DEFAULT TRUE,
+          status VARCHAR(20) DEFAULT 'accepted',
           PRIMARY KEY (note_id, user_email)
       );
     `);
+    
+    // Auto-migrate: Add status column if missing
+    try { await pool.query("ALTER TABLE note_collaborators ADD COLUMN status VARCHAR(20) DEFAULT 'accepted';"); } catch (e) {}
+    try { await pool.query("UPDATE note_collaborators SET status = 'accepted' WHERE status IS NULL;"); } catch (e) {}
     try { await pool.query('ALTER TABLE note_collaborators ADD COLUMN can_edit BOOLEAN DEFAULT TRUE;'); } catch (e) {}
 
     await pool.query(`
@@ -139,12 +144,50 @@ app.delete('/api/notes/wipe', authenticateUser, async (req, res) => {
         await pool.query('DELETE FROM notes WHERE user_id = $1', [req.user.uid]);
         res.json({ message: 'All notes wiped successfully' });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to wipe notes' });
-    }
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// 1. Get all notes for a user (owned + shared)
+// 1. Get invitations for the user
+app.get('/api/invitations', authenticateUser, async (req, res) => {
+  const userEmail = req.user.email;
+  try {
+    const result = await pool.query(
+      `SELECT n.id, n.title, n.owner_name, c.can_edit 
+       FROM notes n
+       JOIN note_collaborators c ON n.id = c.note_id
+       WHERE c.user_email = $1 AND c.status = 'pending'`,
+      [userEmail]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 1.2 Accept/Reject invitation
+app.post('/api/invitations/:id/:action', authenticateUser, async (req, res) => {
+  const { id, action } = req.params;
+  const userEmail = req.user.email;
+  try {
+    if (action === 'accept') {
+      await pool.query(
+        "UPDATE note_collaborators SET status = 'accepted' WHERE note_id = $1 AND user_email = $2",
+        [id, userEmail]
+      );
+    } else {
+      await pool.query(
+        "DELETE FROM note_collaborators WHERE note_id = $1 AND user_email = $2",
+        [id, userEmail]
+      );
+    }
+    res.json({ message: 'Success' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 1.3 Get all notes (only accepted ones)
 app.get('/api/notes', authenticateUser, async (req, res) => {
   const userEmail = req.user.email;
   try {
@@ -154,7 +197,7 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
        CASE WHEN n.user_id = $1 THEN true ELSE COALESCE(c.can_edit, false) END as can_edit
        FROM notes n
        LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
-       WHERE n.user_id = $1 OR c.user_email = $2
+       WHERE n.user_id = $1 OR (c.user_email = $2 AND c.status = 'accepted')
        ORDER BY n.updated_at DESC`,
       [req.user.uid, userEmail]
     );
@@ -326,7 +369,7 @@ app.patch('/api/notes/:id/access', authenticateUser, async (req, res) => {
   }
 });
 
-// 6. Share with a specific user
+// 6. Share with a specific user (Invite)
 app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
   const { id } = req.params;
   const { email, can_edit } = req.body;
@@ -338,14 +381,16 @@ app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
     const ownerCheck = await pool.query('SELECT user_id FROM notes WHERE id = $1 AND user_id = $2', [id, req.user.uid]);
     if (ownerCheck.rowCount === 0) return res.status(403).json({ error: 'Only owner can share' });
 
+    // Set status to 'pending' for invitations
     await pool.query(
-      'INSERT INTO note_collaborators (note_id, user_email, can_edit) VALUES ($1, $2, $3) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3',
-      [id, email, can_edit]
+      'INSERT INTO note_collaborators (note_id, user_email, can_edit, status) VALUES ($1, $2, $3, $4) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3',
+      [id, email, can_edit, 'pending']
     );
 
-    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Shared with ${email} (${can_edit ? 'Editor' : 'Viewer'})`]);
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Invited ${email} (${can_edit ? 'Editor' : 'Viewer'})`]);
     res.json({ message: 'Success' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -370,7 +415,7 @@ app.delete('/api/notes/:id/collaborators/:email', authenticateUser, async (req, 
 app.get('/api/notes/:id/collaborators', authenticateUser, async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT user_email, can_edit FROM note_collaborators WHERE note_id = $1', [id]);
+    const result = await pool.query('SELECT user_email, can_edit, status FROM note_collaborators WHERE note_id = $1', [id]);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
