@@ -480,16 +480,31 @@ function openNoteModal(noteId = null) {
             }
 
             toggleSpinner(true, 'SAVING');
-            const token = await currentUser.getIdToken();
-            const method = noteId ? 'PUT' : 'POST';
-            const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, content, category })
-            });
-            if (res.ok) { closeModal(); loadNotes(); showToast("Synchronized", "success"); }
-            toggleSpinner(false);
+            try {
+                const token = await currentUser.getIdToken();
+                const method = noteId ? 'PUT' : 'POST';
+                const url = noteId ? `${API_BASE_URL}/api/notes/${noteId}` : `${API_BASE_URL}/api/notes`;
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ title, content, category })
+                });
+                
+                if (res.ok) { 
+                    closeModal(); 
+                    loadNotes(); 
+                    showToast("Changes saved successfully", "success"); 
+                } else {
+                    const errorText = await res.text();
+                    console.error("API Error:", errorText);
+                    showToast("Failed to save. Please try again.", "error");
+                }
+            } catch (err) {
+                console.error("Network Error:", err);
+                showToast("Network error. Please check your connection.", "error");
+            } finally {
+                toggleSpinner(false);
+            }
         };
     };
 
