@@ -6,7 +6,19 @@ function toggleSpinner(show, text = 'LOADING SPACE') {
     const textEl = document.getElementById('spinner-text');
     if (spinner) {
         spinner.classList.toggle('hidden', !show);
-        if (textEl) textEl.innerText = text.toUpperCase();
+        if (textEl) {
+            const upText = text.toUpperCase();
+            textEl.innerText = upText;
+            
+            // Smart Wake-up Feedback for Render Cold Starts
+            if (show && (upText.includes('LOADING') || upText.includes('RESTORING') || upText.includes('FETCHING'))) {
+                setTimeout(() => {
+                    if (!spinner.classList.contains('hidden') && textEl.innerText === upText) {
+                        textEl.innerText = 'SERVER IS WAKING UP...';
+                    }
+                }, 6000);
+            }
+        }
     }
 }
 
@@ -61,6 +73,9 @@ function initApp() {
 
     toggleSpinner(true, 'RESTORING NOTES');
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    // Early background ping to wake up Render server
+    fetch(`${API_BASE_URL}/api/ping`).catch(() => {});
 
     let isInitialLoad = true;
     

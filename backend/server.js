@@ -100,6 +100,9 @@ const pool = new Pool({
 const app = express();
 const port = process.env.PORT || 3010;
 
+// Health Check / Ping (Wakes up the server)
+app.get('/api/ping', (req, res) => res.json({ status: 'online', timestamp: new Date() }));
+
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
