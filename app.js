@@ -424,9 +424,10 @@ async function loadNotes() {
             <div class="note-card" onclick="openNoteModal('${n.id}')">
                 ${n.attachments && n.attachments.length > 0 ? `<div class="note-card-image" style="background-image: url('${n.attachments[0]}'); height: 120px; border-radius: 12px 12px 0 0; background-size: cover; background-position: center;"></div>` : ''}
                 <div class="note-card-header" style="${n.attachments && n.attachments.length > 0 ? 'padding-top: 1rem;' : ''}">
-                    <div style="display: flex; align-items: center; gap: 0.5rem">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1">
                         <h3>${n.title || 'Untitled'}</h3>
                         ${!n.is_owner ? '<i class="fas fa-user-friends" style="color: var(--primary); font-size: 0.8rem;" title="Shared with you"></i>' : ''}
+                        <i class="fas ${n.sharing_config?.access_type === 'public' ? 'fa-globe' : 'fa-lock'}" style="color: ${n.sharing_config?.access_type === 'public' ? '#10b981' : 'var(--text-dim)'}; font-size: 0.75rem" title="${n.sharing_config?.access_type === 'public' ? 'Publicly shared' : 'Private'}"></i>
                     </div>
                     <button onclick="event.stopPropagation(); deleteNote('${n.id}')" class="delete-btn"><i class="fas fa-trash"></i></button>
                 </div>
@@ -451,8 +452,12 @@ function openNoteModal(noteId = null) {
             <div style="animation: slideUp 0.4s ease-out">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1.5rem">
                     <div style="flex: 1">
-                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
+                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
                             <span style="display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${note?.category || 'General Note'}</span>
+                            <span style="display: inline-block; padding: 4px 12px; background: ${note?.sharing_config?.access_type === 'public' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)'}; color: ${note?.sharing_config?.access_type === 'public' ? '#10b981' : 'var(--text-dim)'}; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border: 1px solid ${note?.sharing_config?.access_type === 'public' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.1)'};">
+                                <i class="fas ${note?.sharing_config?.access_type === 'public' ? 'fa-globe' : 'fa-lock'}" style="margin-right: 4px"></i>
+                                ${note?.sharing_config?.access_type === 'public' ? 'Public' : 'Private'}
+                            </span>
                             ${!note?.is_owner ? `
                                 <span style="display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Shared Note</span>
                                 ${!note?.can_edit ? '<span style="display: inline-block; padding: 4px 12px; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Viewer Only</span>' : ''}
