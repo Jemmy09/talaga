@@ -391,8 +391,8 @@ async function loadNotes() {
         document.getElementById('empty-state').classList.add('hidden');
         list.innerHTML = notes.map(n => `
             <div class="note-card" onclick="openNoteModal('${n.id}')">
-                ${n.image_url ? `<div class="note-card-image" style="background-image: url('${n.image_url}'); height: 120px; border-radius: 12px 12px 0 0; background-size: cover; background-position: center;"></div>` : ''}
-                <div class="note-card-header" style="${n.image_url ? 'padding-top: 1rem;' : ''}">
+                ${n.attachments && n.attachments.length > 0 ? `<div class="note-card-image" style="background-image: url('${n.attachments[0]}'); height: 120px; border-radius: 12px 12px 0 0; background-size: cover; background-position: center;"></div>` : ''}
+                <div class="note-card-header" style="${n.attachments && n.attachments.length > 0 ? 'padding-top: 1rem;' : ''}">
                     <div style="display: flex; align-items: center; gap: 0.5rem">
                         <h3>${n.title || 'Untitled'}</h3>
                         ${!n.is_owner ? '<i class="fas fa-user-friends" style="color: var(--primary); font-size: 0.8rem;" title="Shared with you"></i>' : ''}
@@ -400,7 +400,10 @@ async function loadNotes() {
                     <button onclick="event.stopPropagation(); deleteNote('${n.id}')" class="delete-btn"><i class="fas fa-trash"></i></button>
                 </div>
                 <p>${(n.content || '').substring(0, 80)}...</p>
-                <div class="note-card-footer"><span>${new Date(n.updated_at || n.created_at).toLocaleDateString()}</span></div>
+                <div class="note-card-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.7rem; color: var(--text-dim)">${!n.is_owner ? 'Owned by ' + (n.owner_name || 'Collaborator') : 'Owner'}</span>
+                    <span>${new Date(n.updated_at || n.created_at).toLocaleDateString()}</span>
+                </div>
             </div>`).join('');
     }
 }
@@ -422,20 +425,34 @@ function openNoteModal(noteId = null) {
                             ${!note?.is_owner ? '<span style="display: inline-block; padding: 4px 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Shared Note</span>' : ''}
                         </div>
                         <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.2">${note ? note.title : 'New Note'}</h1>
-                        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem">Last updated: ${new Date(note ? (note.updated_at || note.created_at) : Date.now()).toLocaleString()}</p>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.75rem">
+                            <p style="color: var(--text-dim); font-size: 0.8rem;">Owner: <strong style="color: white">${note?.owner_name || 'You'}</strong></p>
+                            <p style="color: var(--text-dim); font-size: 0.8rem;">Last Editor: <strong style="color: white">${note?.last_editor_name || 'N/A'}</strong></p>
+                            <p style="color: var(--text-dim); font-size: 0.8rem;">Updated: ${new Date(note ? (note.updated_at || note.created_at) : Date.now()).toLocaleString()}</p>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 0.75rem">
+                        <button id="view-history-btn" class="delete-btn" title="Activity History" style="color: #6366f1; background: rgba(99, 102, 241, 0.05)"><i class="fas fa-history"></i></button>
                         ${note?.is_owner ? `<button id="share-note-btn" class="delete-btn" title="Share Note" style="color: #10b981; background: rgba(16, 185, 129, 0.05)"><i class="fas fa-share-alt"></i></button>` : ''}
-                        <button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>
-                        <button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>
+                        ${(note?.is_owner || note?.can_edit !== false) ? `<button id="edit-mode-btn" class="delete-btn" title="Edit Note" style="color: var(--primary); background: rgba(99, 102, 241, 0.05)"><i class="fas fa-edit"></i></button>` : ''}
+                        ${note?.is_owner ? `<button id="delete-modal-btn" class="delete-btn" title="Delete Note" style="background: rgba(244, 63, 94, 0.05)"><i class="fas fa-trash"></i></button>` : ''}
                         <button onclick="closeModal()" class="delete-btn" title="Close"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-                ${note?.image_url ? `
-                    <div style="margin-bottom: 2rem; border-radius: 16px; overflow: hidden; max-height: 400px; border: 1px solid var(--glass-border)">
-                        <img src="${note.image_url}" style="width: 100%; height: auto; display: block;">
-                    </div>
-                ` : ''}
+                
+                <div id="attachments-display" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem">
+                    ${(note?.attachments || []).map(url => `
+                        <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); aspect-ratio: 1; background: #000">
+                            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${url}')">
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="history-section" class="hidden" style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; border: 1px solid var(--glass-border)">
+                    <h3 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--primary);">Activity History</h3>
+                    <div id="history-list" style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.8rem; color: var(--text-muted);"></div>
+                </div>
+
                 <div style="font-size: 1.25rem; line-height: 2; color: #e2e8f0; white-space: pre-wrap; min-height: 300px; padding: 0.5rem 0">
                     ${note ? note.content : 'No content provided.'}
                 </div>
@@ -445,8 +462,11 @@ function openNoteModal(noteId = null) {
             </div>
         `;
         document.getElementById('edit-mode-btn').onclick = () => renderEditView();
-        document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
-        if (note?.is_owner) document.getElementById('share-note-btn').onclick = () => shareNote(noteId);
+        if (note?.is_owner) {
+            document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
+            document.getElementById('share-note-btn').onclick = () => shareNote(noteId);
+        }
+        document.getElementById('view-history-btn').onclick = () => toggleHistory(noteId);
     };
 
     const renderEditView = () => {
@@ -472,14 +492,18 @@ function openNoteModal(noteId = null) {
                         <option value="other" ${note?.category === 'other' ? 'selected' : ''}>Other</option>
                     </select>
                     <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="file" id="note-image-picker" accept="image/*" style="display: none;">
+                        <input type="file" id="note-image-picker" accept="image/*" multiple style="display: none;">
                         <button id="trigger-image-picker" class="delete-btn" style="color: var(--primary); background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; width: auto; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; border-radius: 10px;">
-                            <i class="fas fa-paperclip"></i> Attach Image
+                            <i class="fas fa-plus"></i> Add Files
                         </button>
-                        <div id="image-preview-container" style="flex: 1; height: 40px; border-radius: 8px; border: 1px dashed var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(255,255,255,0.02)">
-                            ${note?.image_url ? `<img src="${note.image_url}" style="height: 100%; width: auto;">` : '<span style="color: var(--text-dim); font-size: 0.7rem;">No file chosen</span>'}
+                        <div id="edit-attachments-preview" style="flex: 1; display: flex; gap: 0.5rem; overflow-x: auto; padding: 4px;">
+                            ${(note?.attachments || []).map((url, idx) => `
+                                <div style="position: relative; height: 40px; width: 40px; flex-shrink: 0;">
+                                    <img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 6px;">
+                                    <button onclick="removeAttachment(${idx})" style="position: absolute; -10px; top: -10px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;"><i class="fas fa-times"></i></button>
+                                </div>
+                            `).join('')}
                         </div>
-                        ${note?.image_url ? `<button id="remove-image-btn" class="delete-btn" style="color: #f43f5e;"><i class="fas fa-times"></i></button>` : ''}
                     </div>
                 </div>
 
@@ -491,33 +515,40 @@ function openNoteModal(noteId = null) {
             </div>
         `;
 
-        let currentImageData = note?.image_url || null;
+        let attachments = note?.attachments ? [...note.attachments] : [];
+
+        window.removeAttachment = (idx) => {
+            attachments.splice(idx, 1);
+            updateAttachmentPreview();
+        };
+
+        const updateAttachmentPreview = () => {
+            document.getElementById('edit-attachments-preview').innerHTML = attachments.map((url, idx) => `
+                <div style="position: relative; height: 40px; width: 40px; flex-shrink: 0;">
+                    <img src="${url}" style="height: 100%; width: 100%; object-fit: cover; border-radius: 6px;">
+                    <button onclick="removeAttachment(${idx})" style="position: absolute; right: -5px; top: -5px; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+        };
 
         document.getElementById('trigger-image-picker').onclick = () => document.getElementById('note-image-picker').click();
         
         document.getElementById('note-image-picker').onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                showToast("File too large (Max 2MB)", "error");
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                currentImageData = event.target.result;
-                document.getElementById('image-preview-container').innerHTML = `<img src="${currentImageData}" style="height: 100%; width: auto;">`;
-                showToast("Image attached", "success");
-            };
-            reader.readAsDataURL(file);
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(`File ${file.name} too large`, "error");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    attachments.push(event.target.result);
+                    updateAttachmentPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+            showToast("Files attached", "success");
         };
-
-        if (document.getElementById('remove-image-btn')) {
-            document.getElementById('remove-image-btn').onclick = () => {
-                currentImageData = null;
-                document.getElementById('image-preview-container').innerHTML = '<span style="color: var(--text-dim); font-size: 0.7rem;">No file chosen</span>';
-                document.getElementById('remove-image-btn').style.display = 'none';
-            };
-        }
 
         if (noteId) document.getElementById('cancel-edit-btn').onclick = () => renderReadView();
 
@@ -529,7 +560,7 @@ function openNoteModal(noteId = null) {
             if (!title && !content) return;
 
             // Professional check: Only sync if changes were actually made
-            if (note && note.title === title && note.content === content && (note.category || 'info') === category && note.image_url === currentImageData) {
+            if (note && note.title === title && note.content === content && (note.category || 'info') === category && JSON.stringify(note.attachments || []) === JSON.stringify(attachments)) {
                 closeModal();
                 return;
             }
@@ -542,7 +573,7 @@ function openNoteModal(noteId = null) {
                 const res = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ title, content, category, image_url: currentImageData })
+                    body: JSON.stringify({ title, content, category, attachments })
                 });
                 
                 if (res.ok) { 
@@ -575,9 +606,34 @@ function closeModal() {
     if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 }
 
+async function toggleHistory(id) {
+    const section = document.getElementById('history-section');
+    if (!section.classList.contains('hidden')) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    try {
+        const token = await currentUser.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/api/notes/${id}/history`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const history = await res.json();
+        const list = document.getElementById('history-list');
+        list.innerHTML = history.length > 0 
+            ? history.map(h => `<div><strong style="color: white">${h.user_name}</strong> ${h.action} <span style="opacity: 0.5; font-size: 0.7rem">${new Date(h.created_at).toLocaleString()}</span></div>`).join('')
+            : 'No history found.';
+        section.classList.remove('hidden');
+    } catch (e) {
+        showToast("Failed to load history", "error");
+    }
+}
+
 async function shareNote(id) {
     const email = prompt("Enter the email of the person you want to share this note with:");
     if (!email || !email.includes('@')) return;
+
+    const canEdit = confirm("Do you want to allow this person to EDIT the note?\n\nOK = Yes (Editor)\nCancel = No (View Only)");
 
     toggleSpinner(true, 'SHARING');
     try {
@@ -585,10 +641,10 @@ async function shareNote(id) {
         const res = await fetch(`${API_BASE_URL}/api/notes/${id}/share`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, can_edit: canEdit })
         });
         if (res.ok) {
-            showToast(`Note shared with ${email}`, "success");
+            showToast(`Note shared with ${email} (${canEdit ? 'Editor' : 'Viewer'})`, "success");
         } else {
             const err = await res.json();
             showToast(err.error || "Failed to share note", "error");

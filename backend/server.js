@@ -25,27 +25,40 @@ const pool = new Pool({
       CREATE TABLE IF NOT EXISTS notes (
           id SERIAL PRIMARY KEY,
           user_id VARCHAR(255) NOT NULL,
+          owner_name VARCHAR(255),
+          last_editor_name VARCHAR(255),
           title VARCHAR(255) NOT NULL,
           description TEXT,
           content TEXT,
-          image_url TEXT,
+          attachments JSONB DEFAULT '[]',
           category VARCHAR(50) CHECK (category IN ('info', 'todo', 'account', 'business', 'student', 'personal', 'other')),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
-    // Auto-migrate: Add columns if they are missing from an older schema version
-    try { await pool.query('ALTER TABLE notes ADD COLUMN description TEXT;'); } catch (e) { /* Ignore if exists */ }
-    try { await pool.query('ALTER TABLE notes ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;'); } catch (e) { /* Ignore if exists */ }
-    try { await pool.query('ALTER TABLE notes ADD COLUMN category VARCHAR(50) DEFAULT \'info\';'); } catch (e) { /* Ignore if exists */ }
-    try { await pool.query('ALTER TABLE notes ADD COLUMN image_url TEXT;'); } catch (e) { /* Ignore if exists */ }
+    // Auto-migrate: Add columns if they are missing
+    try { await pool.query('ALTER TABLE notes ADD COLUMN owner_name VARCHAR(255);'); } catch (e) {}
+    try { await pool.query('ALTER TABLE notes ADD COLUMN last_editor_name VARCHAR(255);'); } catch (e) {}
+    try { await pool.query('ALTER TABLE notes ADD COLUMN attachments JSONB DEFAULT \'[]\';'); } catch (e) {}
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS note_collaborators (
           note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,
           user_email VARCHAR(255) NOT NULL,
+          can_edit BOOLEAN DEFAULT TRUE,
           PRIMARY KEY (note_id, user_email)
+      );
+    `);
+    try { await pool.query('ALTER TABLE note_collaborators ADD COLUMN can_edit BOOLEAN DEFAULT TRUE;'); } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS note_history (
+          id SERIAL PRIMARY KEY,
+          note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,
+          user_name VARCHAR(255) NOT NULL,
+          action TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -149,15 +162,21 @@ app.get('/api/notes', authenticateUser, async (req, res) => {
 
 // 2. Create a new note
 app.post('/api/notes', authenticateUser, async (req, res) => {
-  const { title, description, content, category, image_url } = req.body;
+  const { title, description, content, category, attachments } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
+    const userName = req.user.name || req.user.email || 'Anonymous';
     const result = await pool.query(
-      'INSERT INTO notes (user_id, title, description, content, category, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [req.user.uid, title || null, description || null, content || null, category || 'info', image_url || null]
+      'INSERT INTO notes (user_id, owner_name, last_editor_name, title, description, content, category, attachments) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [req.user.uid, userName, userName, title || null, description || null, content || null, category || 'info', JSON.stringify(attachments || [])]
     );
-    res.status(201).json(result.rows[0]);
+    const note = result.rows[0];
+    
+    // Log history
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [note.id, userName, 'Created the note']);
+    
+    res.status(201).json(note);
   } catch (err) {
     console.error('❌ Database Insert Error:', err.message);
     res.status(500).json({ error: 'Database error', details: err.message });
@@ -167,14 +186,15 @@ app.post('/api/notes', authenticateUser, async (req, res) => {
 // 3. Update an existing note
 app.put('/api/notes/:id', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { title, description, content, category, image_url } = req.body;
+  const { title, description, content, category, attachments } = req.body;
   const userEmail = req.user.email;
+  const userName = req.user.name || req.user.email || 'Anonymous';
   
   try {
-    // Check if user is owner or collaborator
+    // Check if user is owner or collaborator with edit permission
     const accessCheck = await pool.query(
-      `SELECT n.user_id FROM notes n
-       LEFT JOIN note_collaborators c ON n.id = c.note_id
+      `SELECT n.user_id, c.can_edit FROM notes n
+       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $3
        WHERE n.id = $1 AND (n.user_id = $2 OR c.user_email = $3)`,
       [id, req.user.uid, userEmail]
     );
@@ -183,10 +203,19 @@ app.put('/api/notes/:id', authenticateUser, async (req, res) => {
       return res.status(404).json({ error: 'Note not found or unauthorized' });
     }
 
+    const row = accessCheck.rows[0];
+    const isOwner = row.user_id === req.user.uid;
+    if (!isOwner && row.can_edit === false) {
+      return res.status(403).json({ error: 'You do not have permission to edit this note' });
+    }
+
     const result = await pool.query(
-      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, image_url = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *',
-      [title || null, description || null, content || null, category || 'info', image_url || null, id]
+      'UPDATE notes SET title = $1, description = $2, content = $3, category = $4, attachments = $5, last_editor_name = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7 RETURNING *',
+      [title || null, description || null, content || null, category || 'info', JSON.stringify(attachments || []), userName, id]
     );
+
+    // Log history
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, 'Updated the note content']);
     
     res.json(result.rows[0]);
   } catch (err) {
@@ -218,7 +247,8 @@ app.delete('/api/notes/:id', authenticateUser, async (req, res) => {
 // 5. Share a note
 app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
   const { id } = req.params;
-  const { email } = req.body;
+  const { email, can_edit } = req.body;
+  const userName = req.user.name || req.user.email || 'Anonymous';
   
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
@@ -230,9 +260,13 @@ app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
     }
 
     await pool.query(
-      'INSERT INTO note_collaborators (note_id, user_email) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-      [id, email]
+      'INSERT INTO note_collaborators (note_id, user_email, can_edit) VALUES ($1, $2, $3) ON CONFLICT (note_id, user_email) DO UPDATE SET can_edit = $3',
+      [id, email, can_edit !== false]
     );
+
+    // Log history
+    await pool.query('INSERT INTO note_history (note_id, user_name, action) VALUES ($1, $2, $3)', [id, userName, `Shared note with ${email} (${can_edit !== false ? 'Edit' : 'View'} permission)`]);
+
     res.json({ message: `Note shared with ${email}` });
   } catch (err) {
     console.error(err);
@@ -244,7 +278,18 @@ app.post('/api/notes/:id/share', authenticateUser, async (req, res) => {
 app.get('/api/notes/:id/collaborators', authenticateUser, async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT user_email FROM note_collaborators WHERE note_id = $1', [id]);
+    const result = await pool.query('SELECT user_email, can_edit FROM note_collaborators WHERE note_id = $1', [id]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 7. Get history for a note
+app.get('/api/notes/:id/history', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM note_history WHERE note_id = $1 ORDER BY created_at DESC LIMIT 50', [id]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error' });
