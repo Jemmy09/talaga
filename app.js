@@ -703,11 +703,18 @@ function openNoteModal(noteId = null) {
             img.onclick = () => openLightbox(img.src);
         });
 
-        document.getElementById('edit-mode-btn').onclick = () => renderEditView();
-        if (note?.is_owner) {
-            document.getElementById('delete-modal-btn').onclick = () => deleteNote(noteId);
-            document.getElementById('manage-note-btn').onclick = () => openSharingModal(noteId);
-            document.getElementById('copy-quick-link-btn').onclick = () => {
+        const editBtn = document.getElementById('edit-mode-btn');
+        if (editBtn) editBtn.onclick = () => renderEditView();
+
+        const deleteBtn = document.getElementById('delete-modal-btn');
+        if (deleteBtn) deleteBtn.onclick = () => deleteNote(noteId);
+
+        const manageBtn = document.getElementById('manage-note-btn');
+        if (manageBtn) manageBtn.onclick = () => openSharingModal(noteId);
+
+        const copyBtn = document.getElementById('copy-quick-link-btn');
+        if (copyBtn) {
+            copyBtn.onclick = () => {
                 const config = note.sharing_config || { share_token: null };
                 if (!config.share_token || config.access_type === 'restricted') {
                     showToast("Change access to 'Public' in Manage Note first", "warning");
@@ -718,7 +725,9 @@ function openNoteModal(noteId = null) {
                 navigator.clipboard.writeText(link).then(() => showToast("Link copied!", "success"));
             };
         }
-        document.getElementById('view-history-btn').onclick = () => toggleHistory(noteId);
+
+        const historyBtn = document.getElementById('view-history-btn');
+        if (historyBtn) historyBtn.onclick = () => toggleHistory(noteId);
     };
 
     const renderEditView = () => {
