@@ -994,8 +994,15 @@ function openNoteModal(noteId = null) {
                     loadNotes(); 
                     showToast("Changes saved successfully", "success"); 
                 } else {
-                    const err = await res.json().catch(() => ({}));
-                    showToast(err.error || "Failed to save. Unauthorized.", "error");
+                    let errorMessage = "Access Denied / Unauthorized";
+                    try {
+                        const err = await res.json();
+                        errorMessage = err.error || errorMessage;
+                    } catch (e) {
+                        const text = await res.text().catch(() => "");
+                        if (text) errorMessage = text.substring(0, 50); 
+                    }
+                    showToast(errorMessage, "error");
                 }
             } catch (err) {
                 console.error("Save Error:", err);

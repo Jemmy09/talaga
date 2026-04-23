@@ -314,7 +314,7 @@ app.post('/api/notes/:id', authenticateUser, async (req, res) => {
     const accessCheck = await pool.query(
       `SELECT n.user_id, n.sharing_config, c.can_edit 
        FROM notes n
-       LEFT JOIN note_collaborators c ON n.id = c.note_id AND c.user_email = $2
+       LEFT JOIN note_collaborators c ON n.id = c.note_id AND LOWER(c.user_email) = LOWER($2)
        WHERE n.id = $1`,
       [noteId, userEmail]
     );
