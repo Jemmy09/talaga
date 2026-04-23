@@ -429,18 +429,73 @@ function renderDashboard() {
 
 function renderProfile() {
     viewContainer.innerHTML = `
-        <div class="profile-container" style="animation: slideUp 0.6s ease-out">
-            <div style="text-align: center; margin-bottom: 2rem">
-                <img src="${currentUser.photoURL}" style="width: 100px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 1rem">
-                <h1>${currentUser.displayName}</h1>
-                <p style="color: var(--text-muted)">${currentUser.email}</p>
+        <div class="profile-container view-enter" style="max-width: 600px; margin: 2rem auto; text-align: center;">
+            <div style="margin-bottom: 3rem; position: relative; display: inline-block;">
+                <img src="${currentUser.photoURL || 'https://ui-avatars.com/api/?name=' + currentUser.displayName}" style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--primary); box-shadow: var(--glow-primary); object-fit: cover;">
+                <div style="position: absolute; bottom: 5px; right: 5px; width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid var(--bg-body); color: white; font-size: 0.8rem;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
             </div>
-            <div style="background: var(--glass-bg); padding: 2rem; border-radius: 1.5rem; text-align: center; border: 1px solid var(--glass-border)">
-                <h2 style="color: var(--primary)">${notes.length}</h2><p>Notes Managed</p>
+            
+            <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 3rem 2rem; box-shadow: var(--shadow-xl);">
+                <div id="profile-display-area">
+                    <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                        ${currentUser.displayName}
+                        <button onclick="toggleNameEdit(true)" class="delete-btn" style="color: var(--primary); background: rgba(99, 102, 241, 0.05); width: 36px; height: 36px; border-radius: 10px;" title="Edit Name"><i class="fas fa-edit"></i></button>
+                    </h1>
+                    <p style="color: var(--text-dim); font-size: 1.1rem; margin-bottom: 2rem;">${currentUser.email}</p>
+                </div>
+                
+                <div id="profile-edit-area" class="hidden">
+                    <input type="text" id="new-display-name" value="${currentUser.displayName}" class="modal-input" style="text-align: center; font-size: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <button onclick="updateDisplayName()" class="btn-primary" style="width: auto; padding: 0.75rem 2rem;">Save Name</button>
+                        <button onclick="toggleNameEdit(false)" class="btn-primary" style="width: auto; padding: 0.75rem 2rem; background: rgba(255,255,255,0.05); color: white; box-shadow: none; border: 1px solid var(--glass-border);">Cancel</button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--glass-border)">
+                    <div style="text-align: center">
+                        <h2 style="color: var(--primary); font-size: 2rem; font-weight: 800;">${notes.length}</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Notes</p>
+                    </div>
+                    <div style="text-align: center">
+                        <h2 style="color: var(--secondary); font-size: 2rem; font-weight: 800;">${notifications.invites.length}</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Invites</p>
+                    </div>
+                </div>
             </div>
+            
+            <button onclick="navigate('dashboard')" class="btn-primary" style="margin-top: 2.5rem; background: transparent; box-shadow: none; border: 1px solid var(--glass-border); color: var(--text-dim); width: auto; padding: 0.75rem 2rem;">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Return to Workspace
+            </button>
         </div>
     `;
     toggleSpinner(false);
+}
+
+function toggleNameEdit(show) {
+    document.getElementById('profile-display-area').classList.toggle('hidden', show);
+    document.getElementById('profile-edit-area').classList.toggle('hidden', !show);
+}
+
+async function updateDisplayName() {
+    const newName = document.getElementById('new-display-name').value.trim();
+    if (!newName || newName === currentUser.displayName) {
+        toggleNameEdit(false);
+        return;
+    }
+
+    toggleSpinner(true, 'UPDATING PROFILE');
+    try {
+        await currentUser.updateProfile({ displayName: newName });
+        showToast("Display name updated!", "success");
+        renderProfile();
+    } catch (e) {
+        showToast("Failed to update profile", "error");
+    } finally {
+        toggleSpinner(false);
+    }
 }
 
 function renderSettings() {
@@ -494,18 +549,60 @@ function renderAbout() {
 
 function renderFeedback() {
     viewContainer.innerHTML = `
-        <div style="max-width: 600px; margin: 4rem auto; text-align: center; animation: slideUp 0.6s ease-out">
-            <h1 style="font-size: 2.5rem; margin-bottom: 1rem">Feedback</h1>
-            <p style="color: var(--text-muted); margin-bottom: 2rem">Send to developer</p>
-            <div class="settings-group" style="text-align: left">
-                <textarea id="feedback-text" placeholder="Add feedback" style="width: 100%; min-height: 150px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; color: white; padding: 1.25rem; font-family: inherit; resize: vertical"></textarea>
+        <div class="view-enter" style="max-width: 700px; margin: 3rem auto; padding-bottom: 5rem">
+            <div style="text-align: center; margin-bottom: 3.5rem">
+                <h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 0.75rem">Platform Feedback</h1>
+                <p style="color: var(--text-dim); font-size: 1.1rem">Your insights help us craft a better sanctuary for your thoughts.</p>
             </div>
-            <button id="submit-feedback-btn" class="btn-primary" style="width: 100%; margin-top: 1.5rem">Send</button>
+            
+            <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 2.5rem; padding: 3rem; box-shadow: var(--shadow-xl); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; right: 0; width: 150px; height: 150px; background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent); pointer-events: none;"></div>
+                
+                <div style="margin-bottom: 2.5rem">
+                    <label style="display: block; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--primary); margin-bottom: 1rem;">Describe your experience</label>
+                    <textarea id="feedback-text" placeholder="What's on your mind? Suggestions, bugs, or love letters..." 
+                        style="width: 100%; min-height: 200px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 1.5rem; color: white; padding: 1.5rem; font-family: inherit; font-size: 1.1rem; line-height: 1.6; resize: vertical; transition: var(--transition); outline: none;"
+                        onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 4px rgba(99, 102, 241, 0.1)'"
+                        onblur="this.style.borderColor='var(--glass-border)'; this.style.boxShadow='none'"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1.5rem; align-items: center;">
+                    <button id="submit-feedback-btn" class="btn-primary" style="flex: 1; padding: 1.25rem; font-size: 1.1rem; font-weight: 700; border-radius: 1.25rem;">
+                        <i class="fas fa-paper-plane" style="margin-right: 10px;"></i> Send Feedback
+                    </button>
+                </div>
+                
+                <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                    Submitting as <strong style="color: white">${currentUser.displayName}</strong>. 
+                    We review all feedback personally.
+                </p>
+            </div>
+
+            <div style="margin-top: 4rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 1.5rem; text-align: center;">
+                    <i class="fas fa-lightbulb" style="color: #fbbf24; font-size: 1.5rem; margin-bottom: 1rem;"></i>
+                    <h4 style="margin-bottom: 0.5rem;">Ideas</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-dim);">New features or UI improvements.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 1.5rem; text-align: center;">
+                    <i class="fas fa-bug" style="color: #f43f5e; font-size: 1.5rem; margin-bottom: 1rem;"></i>
+                    <h4 style="margin-bottom: 0.5rem;">Bugs</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-dim);">Something not working? Let us know.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 1.5rem; text-align: center;">
+                    <i class="fas fa-heart" style="color: #ec4899; font-size: 1.5rem; margin-bottom: 1rem;"></i>
+                    <h4 style="margin-bottom: 0.5rem;">Support</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-dim);">General questions or assistance.</p>
+                </div>
+            </div>
         </div>`;
 
     document.getElementById('submit-feedback-btn').onclick = async () => {
         const text = document.getElementById('feedback-text').value.trim();
-        if (!text) return;
+        if (!text) {
+            showToast("Please enter some feedback first!", "warning");
+            return;
+        }
         toggleSpinner(true, 'SENDING');
         try {
             const token = await currentUser.getIdToken();
@@ -515,10 +612,12 @@ function renderFeedback() {
                 body: JSON.stringify({ text })
             });
             if (res.ok) {
-                showToast("Feedback Sent", "success");
+                showToast("Feedback Received! Thank you.", "success");
                 navigate('dashboard');
             }
-        } catch (e) { }
+        } catch (e) {
+            showToast("Failed to send feedback", "error");
+        }
         toggleSpinner(false);
     };
     toggleSpinner(false);
