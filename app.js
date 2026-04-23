@@ -463,6 +463,8 @@ function renderLogin() {
         toggleSpinner(true, 'AUTHENTICATING');
         try {
             await auth.signInWithPopup(provider);
+            // Instant success feedback
+            toggleSpinner(true, 'SUCCESS! REDIRECTING...');
         } catch (e) {
             toggleSpinner(false);
             showToast(e.message, "error");
