@@ -372,18 +372,17 @@ async function checkUserStatus() {
     if (logoutBtn) {
         logoutBtn.onclick = () => {
             toggleSpinner(true, 'SIGNING OUT');
-            // INSTANT UI RESPONSE: Clear state and go to login
+            // Instant state cleanup
             currentUser = null;
             notes = [];
             if (window.innerWidth <= 768) toggleMenu(true);
             
-            auth.signOut().then(() => {
-                showView('login');
+            // Redirect immediately
+            navigate('login');
+            
+            auth.signOut().finally(() => {
                 toggleSpinner(false);
                 showToast('Signed out successfully', 'success');
-            }).catch(() => {
-                showView('login');
-                toggleSpinner(false);
             });
         };
     }
