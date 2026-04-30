@@ -101,6 +101,8 @@ talaga/
 |---|---|
 | **Aiven PostgreSQL 17.9** | Cloud-hosted relational database |
 | **Firebase (Google)** | Authentication provider |
+| **DigitalPlat** | Free `.qzz.io` custom domain registration |
+| **Cloudflare** | DNS management, CDN, and SSL/HTTPS |
 
 ---
 
@@ -241,7 +243,16 @@ The database is automatically created and migrated on every server startup. No m
 
 ### Step 4 — Firebase Authorized Domains
 1. Firebase Console → **Authentication** → **Settings** → **Authorized Domains**
-2. Add your GitHub Pages domain: `your-username.github.io`
+2. Add your GitHub Pages domain (`your-username.github.io`) AND your custom domain (`talaga.qzz.io`).
+
+### Step 5 — Custom Domain Setup (DigitalPlat & Cloudflare)
+This project uses a custom domain `talaga.qzz.io` registered via **DigitalPlat** and secured by **Cloudflare**.
+1. Register a free domain at [DigitalPlat Domains](https://dash.domain.digitalplat.org/).
+2. Add the site to [Cloudflare](https://dash.cloudflare.com/) for DNS management and strict HTTPS.
+3. Update the nameservers in DigitalPlat to point to Cloudflare.
+4. In Cloudflare DNS, create a CNAME record pointing to your GitHub Pages URL (`your-username.github.io`).
+5. In your GitHub repository settings under **Pages**, set your custom domain.
+6. Ensure a `CNAME` file containing your domain exists in the root of your repository.
 
 ---
 
