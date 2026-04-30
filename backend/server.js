@@ -103,14 +103,7 @@ const port = process.env.PORT || 3010;
 // Health Check / Ping (Wakes up the server)
 app.get('/api/ping', (req, res) => res.json({ status: 'online', timestamp: new Date() }));
 
-app.use(cors({
-  origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- Pre-flight Checks (Professional Security) ---
 if (!process.env.DATABASE_URL) {
