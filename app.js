@@ -59,7 +59,7 @@ const firebaseConfig = {
     appId: "1:333100224160:web:4887376c6c59b66c433a75"
 };
 
-const API_BASE_URL = 'https://talaga-backend.onrender.com';
+const API_BASE_URL = 'https://talaga-backend-4o1y.onrender.com';
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
